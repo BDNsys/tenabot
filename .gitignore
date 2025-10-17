@@ -1,0 +1,81 @@
+=== Django Project .gitignore ===
+
+----------------------------------
+
+1. Python Bytecode, Caches, and Virtual Environments
+
+----------------------------------
+
+*.pyc
+pycache/
+*.so
+*.egg
+.Python
+build/
+dist/
+develop-eggs/
+eggs/
+venv/
+.venv/
+env/
+.env/
+.idea/
+.vscode/
+
+----------------------------------
+
+2. Database Files
+
+----------------------------------
+
+SQLite database files
+
+*.sqlite3
+
+----------------------------------
+
+3. Static and Media Files (Deployment Assets)
+
+----------------------------------
+
+Django creates these folders during deployment (collectstatic and file uploads)
+
+/static_root/
+/staticfiles/
+/media/
+
+----------------------------------
+
+4. Configuration and Local Settings
+
+----------------------------------
+
+Keep local settings separate if they contain secrets (like SECRET_KEY or database passwords)
+
+It's better to use environment variables or a separate, ignored local settings file.
+
+local_settings.py
+.DS_Store
+
+----------------------------------
+
+5. Testing and Coverage
+
+----------------------------------
+
+.coverage
+.tox/
+htmlcov/
+
+----------------------------------
+
+6. Debugging and Logging
+
+----------------------------------
+
+*.log
+*.seed
+/logs/
+/debug.log
+/nohup.out
+/temp/
