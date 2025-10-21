@@ -20,5 +20,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           server-dir: ${{ secrets.FTP_DIR }}
           script: |
-            chmod +x bdnsys.com/nazri_bdn/tena
+            chmod +x /home/bdnsysif/bdnsys.com/nazri_bdn/tena
             /home/bdnsysif/bdnsys.com/nazri_bdn/tena
