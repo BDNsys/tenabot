@@ -33,6 +33,12 @@
             border-left: 4px solid var(--tg-theme-accent-text-color, #5E62F4);
         }
     </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand(); // optional: expands the app to full height
+  console.log("Telegram Mini App initialized");
+</script>
     <script>
         tailwind.config = {
             theme: {
