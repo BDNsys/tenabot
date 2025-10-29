@@ -4,7 +4,7 @@
 
 
 # Activate the virtual environment
-source /home/oce295lv5izw/virtualenv/public_html/dansileshi.org/bdn_ftp/home/oce295lv5izw/public_html/bdn_ftp/danipage/3.11/bin/activate && cd /home/oce295lv5izw/public_html/dansileshi.org/bdn_ftp/home/oce295lv5izw/public_html/bdn_ftp/danipage
+source /home/bdnsysif/virtualenv/bdnsys.com/nazri_bdn/tena/3.11/bin/activate && cd /home/bdnsysif/bdnsys.com/nazri_bdn/tena
 # Install any new dependencies
 pip install -r requirements.txt
 
