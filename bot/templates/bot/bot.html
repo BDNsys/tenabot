@@ -56,7 +56,7 @@
                 </p>
 
 
-                  <p class="text-gray-300"><span class="font-semibold">check:</span> <span id="check">...</span>
+                <p class="text-gray-300"><span class="font-semibold">check:</span> <span id="check">...</span>
                 </p>
             </div>
 
@@ -67,16 +67,11 @@
     <script>
         const tg = window.Telegram.WebApp;
 
-        
+
 
         tg.ready(); // signals readiness
 
-        const userData = tg.initDataUnsafe.user;
-        if (userData) {
-            console.log('User data:', userData);
-        } else {
-            console.warn('No user data available. Launch app from a bot chat!');
-        }
+
         tg.expand(); // expands the mini-app
 
 
@@ -110,19 +105,25 @@
                 `${user.first_name || ''} ${user.last_name || ''} (@${user.username || 'N/A'})`;
             document.getElementById('user-id').textContent = user.telegram_id || user.id;
 
-            
+
         }
         function updateCheckUI(user) {
-           
+
             document.getElementById('check').textContent = user;
 
-            
+
         }
 
         // Wait for Telegram WebApp to be ready before accessing user
         document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
-               
+                const userData = tg.initDataUnsafe.user;
+                if (userData) {
+                    console.log('User data:', userData);
+                } else {
+                    console.warn('No user data available. Launch app from a bot chat!');
+                }
+
                 console.log('Telegram userData:', userData);
                 if (userData) {
                     updateUI({
@@ -135,8 +136,8 @@
                 } else {
                     updateUI({
                         first_name: "blue",
-                        last_name:"blue",
-                        username:"blue",
+                        last_name: "blue",
+                        username: "blue",
                         telegram_id: "blue"
                     });
                     updateCheckUI(userData)
