@@ -3,9 +3,14 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from users.models import User
+
 from users.serializers import UserSerializer
 
+
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def register_telegram_user(request):
@@ -42,14 +47,13 @@ def get_user(request, telegram_id):
         serializer = UserSerializer(user)
         return Response({"success": True, "user": serializer.data})
     except User.DoesNotExist:
-        return Response({"success": False, "error": "User not found"}, status=404)
-    
+        return Response({"success": False, "error": "User not found"}, status=404) 
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def get_users(request):
     try:
         users = User.objects.all()
-        serializer = UserSerializer(users)
+        serializer = UserSerializer(users,many=True)
         return Response({"success": True, "user": serializer.data})
     except User.DoesNotExist:
         return Response({"success": False, "error": "User not found"}, status=404)
