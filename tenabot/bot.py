@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, Update,InlineKeyboardButton,InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from asgiref.sync import sync_to_async
@@ -47,9 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = f"Welcome back, {telegram_user.first_name or telegram_user.username}!"
 
-    keyboard = [
-        [KeyboardButton("🚀 Launch Tenabot", web_app=WebAppInfo(url="https://tena.bdnsys.com/bot/"))]
-    ]
+   
     # reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
     # 1. Use InlineKeyboardButton with web_app
     keyboard = [
