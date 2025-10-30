@@ -2,9 +2,15 @@ import os
 from dotenv import load_dotenv
 from telegram import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from users.models import User
+
 import django
 import sys
+
+from asgiref.sync import sync_to_async
+from django.contrib.auth import get_user_model
+from . import views
+
+User = get_user_model()
 
 # Ensure Django is initialized
 sys.path.append('/path/to/your/project')  # e.g. "/home/nazri/tenabot"
@@ -15,23 +21,10 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 
-def register_telegram_user(telegram_user):
-    """Registers the Telegram user in Django if not already registered."""
-    user, created = User.objects.get_or_create(
-        telegram_id=str(telegram_user.id),
-        defaults={
-            'username': telegram_user.username,
-            'first_name': telegram_user.first_name,
-            'last_name': telegram_user.last_name,
-            'avatar_url': None,  # Telegram API v6 no longer exposes avatar directly
-        },
-    )
-    return user, created
-
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_user = update.effective_user
-    user, created = await register_telegram_user(update.effective_user)
+    user, created = await views.register_telegram_user(telegram_user)  # ✅ await here!
     await update.message.reply_text(f"Welcome, {user.username}!")
     if created:
         message = f"👋 Welcome, {telegram_user.first_name}! Your Tenabot account has been created."

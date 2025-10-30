@@ -9,8 +9,8 @@ def register_telegram_user(telegram_user):
         telegram_id=telegram_user.id,
         defaults={
             "username": telegram_user.username or f"user_{telegram_user.id}",
-            "first_name": telegram_user.first_name,
-            "last_name": telegram_user.last_name,
+            "first_name": telegram_user.first_name or "",
+            "last_name": telegram_user.last_name or "",
         },
     )
     return user, created
