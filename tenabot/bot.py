@@ -31,8 +31,8 @@ def register_telegram_user(telegram_user):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_user = update.effective_user
-    user, created = register_telegram_user(telegram_user)
-
+    user, created = await register_telegram_user(update.effective_user)
+    await update.message.reply_text(f"Welcome, {user.username}!")
     if created:
         message = f"👋 Welcome, {telegram_user.first_name}! Your Tenabot account has been created."
     else:

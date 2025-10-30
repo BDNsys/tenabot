@@ -1,25 +1,16 @@
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
+from asgiref.sync import sync_to_async
+
 from users.models import User
 
-
-@csrf_exempt
-def register_telegram_user_view(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-        telegram_id = str(data.get("telegram_id"))
-        user, created = User.objects.get_or_create(
-            telegram_id=telegram_id,
-            defaults={
-                "username": data.get("username"),
-                "first_name": data.get("first_name"),
-                "last_name": data.get("last_name"),
-                "avatar_url": data.get("avatar_url"),
-            },
-        )
-        return JsonResponse({"status": "ok", "created": created})
-    return JsonResponse({"error": "Invalid method"}, status=405)
-
-
+@sync_to_async
+def register_telegram_user(telegram_user):
+    user, created = User.objects.get_or_create(
+        telegram_id=telegram_user.id,
+        defaults={
+            "username": telegram_user.username or f"user_{telegram_user.id}",
+            "first_name": telegram_user.first_name,
+            "last_name": telegram_user.last_name,
+        },
+    )
+    return user, created
