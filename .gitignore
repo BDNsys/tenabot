@@ -79,3 +79,5 @@ htmlcov/
 /debug.log
 /nohup.out
 /temp/
+
+.env
