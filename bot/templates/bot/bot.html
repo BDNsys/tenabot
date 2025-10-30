@@ -66,11 +66,6 @@
         tg.ready(); // signals readiness
         tg.expand(); // expands the mini-app
 
-        function updateUI(user) {
-            document.getElementById('user-name').textContent =
-                `${user.first_name || ''} ${user.last_name || ''} (@${user.username || 'N/A'})`;
-            document.getElementById('user-id').textContent = user.telegram_id || user.id;
-        }
 
         function registerUser(userData) {
             fetch('https://tena.bdnsys.com/api/register_telegram_user/', {
@@ -94,6 +89,13 @@
                     }
                 })
                 .catch(err => console.error('Fetch error:', err));
+        }
+
+
+        function updateUI(user) {
+            document.getElementById('user-name').textContent =
+                `${user.first_name || ''} ${user.last_name || ''} (@${user.username || 'N/A'})`;
+            document.getElementById('user-id').textContent = user.telegram_id || user.id;
         }
 
         // Wait for Telegram WebApp to be ready before accessing user
