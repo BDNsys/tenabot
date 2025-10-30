@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from telegram import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, Update
+from telegram import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, Update,InlineKeyboardButton,InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from asgiref.sync import sync_to_async
@@ -50,7 +50,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [KeyboardButton("🚀 Launch Tenabot", web_app=WebAppInfo(url="https://tena.bdnsys.com/bot/"))]
     ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    # reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+    # 1. Use InlineKeyboardButton with web_app
+    keyboard = [
+        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=WebAppInfo(url="https://tena.bdnsys.com/bot/"))]
+    ]
+    
+    # 2. Use InlineKeyboardMarkup
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
     await update.message.reply_text(message, reply_markup=reply_markup)
 
