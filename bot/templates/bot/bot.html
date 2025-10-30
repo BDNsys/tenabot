@@ -8,58 +8,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--tg-theme-bg-color, #1c1c1c);
-            color: var(--tg-theme-text-color, #fff);
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .btn {
-            background-color: var(--tg-theme-button-color, #5E62F4);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.2s;
-            width: 100%;
-        }
-
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        .card {
-            background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-    </style>
-</head>
-
-<body class="h-screen flex items-center justify-center">
-
-    <div class="max-w-md w-full p-6">
-        <div class="card">
-            <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
-            <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
-
-            <div class="mb-4">
-                <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span>
-                </p>
-                <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span>
-                </p>
-            </div>
-
-            <button id="uploadBtn" class="btn">📄 Upload Resume</button>
-        </div>
-    </div>
-
     <script>
         const tg = window.Telegram.WebApp;
 
@@ -120,6 +68,59 @@
         });
     </script>
 
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--tg-theme-bg-color, #1c1c1c);
+            color: var(--tg-theme-text-color, #fff);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .btn {
+            background-color: var(--tg-theme-button-color, #5E62F4);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .card {
+            background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+
+<body class="h-screen flex items-center justify-center">
+
+    <div class="max-w-md w-full p-6">
+        <div class="card">
+            <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
+            <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
+
+            <div class="mb-4">
+                <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span>
+                </p>
+                <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span>
+                </p>
+            </div>
+
+            <button id="uploadBtn" class="btn">📄 Upload Resume</button>
+        </div>
+    </div>
+
+    
 </body>
 
 </html>
