@@ -1,86 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TenaBot — Your Resume Assistant</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TenaBot — Your Resume Assistant</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--tg-theme-bg-color, #1c1c1c);
-      color: var(--tg-theme-text-color, #fff);
-      transition: background-color 0.3s, color 0.3s;
-    }
-    .btn {
-      background-color: var(--tg-theme-button-color, #5E62F4);
-      color: var(--tg-theme-button-text-color, #fff);
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: all 0.2s;
-      width: 100%;
-    }
-    .btn:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-    .card {
-      background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
-  </style>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--tg-theme-bg-color, #1c1c1c);
+            color: var(--tg-theme-text-color, #fff);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .btn {
+            background-color: var(--tg-theme-button-color, #5E62F4);
+            color: var(--tg-theme-button-text-color, #fff);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .card {
+            background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </head>
+
 <body class="h-screen flex items-center justify-center">
 
-  <div class="max-w-md w-full p-6">
-    <div class="card">
-      <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
-      <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
+    <div class="max-w-md w-full p-6">
+        <div class="card">
+            <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
+            <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
 
-      <div class="mb-4">
-        <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span></p>
-        <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span></p>
-      </div>
+            <div class="mb-4">
+                <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span>
+                </p>
+                <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span>
+                </p>
+            </div>
 
-      <button id="uploadBtn" class="btn">📄 Upload Resume</button>
+            <button id="uploadBtn" class="btn">📄 Upload Resume</button>
+        </div>
     </div>
-  </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.ready();
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
 
-    const userData = tg.initDataUnsafe?.user;
-    if (userData) {
-      document.getElementById('user-name').textContent =
-        `${userData.first_name || ''} ${userData.last_name || ''} (@${userData.username || 'N/A'})`;
-      document.getElementById('user-id').textContent = userData.id;
+        const userData = tg.initDataUnsafe?.user;
+        if (userData) {
+            document.getElementById('user-name').textContent =
+                `${userData.first_name || ''} ${userData.last_name || ''} (@${userData.username || 'N/A'})`;
+            document.getElementById('user-id').textContent = userData.id;
 
-      // Automatically register the user on the backend
-      fetch('https://tena.bdnsys.com/api/register_telegram_user/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          telegram_id: userData.id,
-          username: userData.username,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          avatar_url: userData.photo_url || null,
-        }),
-      });
-    }
+            // Automatically register the user on the backend
+            //   fetch('https://tena.bdnsys.com/api/register_telegram_user/', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({
+            //       telegram_id: userData.id,
+            //       username: userData.username,
+            //       first_name: userData.first_name,
+            //       last_name: userData.last_name,
+            //       avatar_url: userData.photo_url || null,
+            //     }),
+            //   });
+            fetch('https://tena.bdnsys.com/api/register_telegram_user/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    telegram_id: userData.id,
+                    username: userData.username,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    avatar_url: userData.photo_url || null,
+                }),
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Registered user:', data.user);
+                        document.getElementById('user-name').textContent =
+                            `${data.user.first_name} ${data.user.last_name} (@${data.user.username})`;
+                        document.getElementById('user-id').textContent = data.user.telegram_id;
+                    } else {
+                        console.error('Registration failed:', data);
+                    }
+                })
+                .catch(err => console.error('Fetch error:', err));
 
-    document.getElementById('uploadBtn').addEventListener('click', () => {
-      tg.showAlert("File upload feature coming soon 🚀");
-    });
-  </script>
+        }
+
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            tg.showAlert("File upload feature coming soon 🚀");
+        });
+    </script>
 </body>
+
 </html>
