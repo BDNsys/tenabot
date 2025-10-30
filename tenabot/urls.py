@@ -21,5 +21,5 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('bot/', include('bot.urls')),
-    path('api/register_telegram_user/', views.register_telegram_user_view, name="register_telegram_user"),
+    path('api/register_telegram_user/', views.register_telegram_user, name="register_telegram_user"),
 ]
