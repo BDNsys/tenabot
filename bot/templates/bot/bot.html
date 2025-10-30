@@ -54,6 +54,10 @@
                 </p>
                 <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span>
                 </p>
+
+
+                  <p class="text-gray-300"><span class="font-semibold">check:</span> <span id="check">...</span>
+                </p>
             </div>
 
             <button id="uploadBtn" class="btn">📄 Upload Resume</button>
@@ -105,6 +109,14 @@
             document.getElementById('user-name').textContent =
                 `${user.first_name || ''} ${user.last_name || ''} (@${user.username || 'N/A'})`;
             document.getElementById('user-id').textContent = user.telegram_id || user.id;
+
+            
+        }
+        function updateCheckUI(user) {
+           
+            document.getElementById('check').textContent = user;
+
+            
         }
 
         // Wait for Telegram WebApp to be ready before accessing user
@@ -127,6 +139,7 @@
                         username:"blue",
                         telegram_id: "blue"
                     });
+                    updateCheckUI(userData)
                     console.warn("No Telegram user data found");
                 }
             }, 500); // short delay to ensure data is loaded
