@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('bot/', include('bot.urls'))
+    path('bot/', include('bot.urls')),
+    path("api/register_telegram_user/", views.register_telegram_user_view, name="register_telegram_user"),
 ]
