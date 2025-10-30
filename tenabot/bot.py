@@ -37,28 +37,28 @@ def register_telegram_user(telegram_user):
 
 
 
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_user = update.effective_user
-    user, created = await register_telegram_user(telegram_user)  # ✅ await here!
-    await update.message.reply_text(f"Welcome, {user.username}!")
+
+    # ✅ Register or get user
+    user, created = await register_telegram_user(telegram_user)
+
+    # ✅ Prepare message
     if created:
-        message = f"👋 Welcome, {telegram_user.first_name}! Your Tenabot account has been created."
+        message = f"👋 Welcome, {telegram_user.first_name or telegram_user.username}! Your Tenabot account has been created."
     else:
         message = f"Welcome back, {telegram_user.first_name or telegram_user.username}!"
 
-   
-    # reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    # 1. Use InlineKeyboardButton with web_app
+    # ✅ Web App button (your mini app)
+    web_app = WebAppInfo(url="https://tena.bdnsys.com/bot/")  # Note: trailing slash included
+
     keyboard = [
-        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=WebAppInfo(url="https://tena.bdnsys.com/bot/"))]
+        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
-    
-    # 2. Use InlineKeyboardMarkup
     reply_markup = InlineKeyboardMarkup(keyboard)
 
+    # ✅ Reply to user
     await update.message.reply_text(message, reply_markup=reply_markup)
-
 
 def main():
     if not BOT_TOKEN:
