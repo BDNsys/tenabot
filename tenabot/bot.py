@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from telegram import KeyboardButton, ReplyKeyboardMarkup, WebAppInfo, Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+from asgiref.sync import sync_to_async
 import django
 import sys
 
@@ -22,11 +23,24 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 
+@sync_to_async
+def register_telegram_user(telegram_user):
+    user, created = User.objects.get_or_create(
+        telegram_id=telegram_user.id,
+        defaults={
+            "username": telegram_user.username or f"user_{telegram_user.id}",
+            "first_name": telegram_user.first_name or "",
+            "last_name": telegram_user.last_name or "",
+        },
+    )
+    return user, created
+
+
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_user = update.effective_user
-    user, created = await views.register_telegram_user(telegram_user)  # ✅ await here!
+    user, created = await register_telegram_user(telegram_user)  # ✅ await here!
     await update.message.reply_text(f"Welcome, {user.username}!")
     if created:
         message = f"👋 Welcome, {telegram_user.first_name}! Your Tenabot account has been created."
