@@ -81,3 +81,5 @@ htmlcov/
 /temp/
 
 .env
+
+pdf/*
