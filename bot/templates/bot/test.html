@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TenaBot Debug Page</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+        // Initialize Eruda for an on-screen developer console on mobile
+        eruda.init();
+    </script>
+
+    <style>
+        body {
+            /* Use a highly visible background color (like yellow or cyan) to ensure the body renders */
+            background-color: #00FFFF; /* Cyan */
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            color: black;
+            height: 100vh; /* Ensure it takes full viewport height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        h1 {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1>✅ Debug Page Loaded Successfully! ✅</h1>
+    <p>If you see this, your server and the Telegram Mini App link are working correctly on this device.</p>
+    <p>Check the console (bottom right icon) for errors related to the Telegram WebApp object.</p>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusElement = document.createElement('p');
+            statusElement.style.marginTop = '20px';
+            
+            if (window.Telegram && window.Telegram.WebApp) {
+                // Initialize the Telegram WebApp object
+                window.Telegram.WebApp.ready(); 
+                
+                // Change the main color to Telegram's background for proof of WebApp API loading
+                const bgColor = window.Telegram.WebApp.themeParams.bg_color || '#212122';
+                document.body.style.backgroundColor = bgColor;
+                
+                statusElement.innerHTML = '<strong>Web App API Status: READY</strong> (Background color changed to match Telegram theme)';
+            } else {
+                statusElement.innerHTML = '<strong>Web App API Status: ERROR</strong> (window.Telegram.WebApp is undefined)';
+                statusElement.style.color = 'red';
+            }
+            document.body.appendChild(statusElement);
+            
+            // Log the key objects to the Eruda console
+            if (window.eruda) {
+                 eruda.console.log('--- Telegram WebApp Debug ---');
+                 eruda.console.log('window.Telegram:', window.Telegram);
+                 if (window.Telegram && window.Telegram.WebApp) {
+                     eruda.console.log('WebApp Initial Data:', window.Telegram.WebApp.initDataUnsafe);
+                 }
+            }
+        });
+    </script>
+</body>
+</html>
