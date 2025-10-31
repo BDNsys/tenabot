@@ -3,69 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TenaBot Debug Page</title>
+    <title>TenaBot DEBUG</title>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>
-        // Initialize Eruda for an on-screen developer console on mobile
-        eruda.init();
-    </script>
-
     <style>
         body {
-            /* Use a highly visible background color (like yellow or cyan) to ensure the body renders */
-            background-color: #00FFFF; /* Cyan */
+            /* HIGH VISIBILITY fallback background */
+            background-color: #FFC0CB; /* Pink */
             margin: 0;
             padding: 20px;
             font-family: sans-serif;
             color: black;
-            height: 100vh; /* Ensure it takes full viewport height */
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
         }
-        h1 {
-            color: black;
-        }
+        h1 { color: black; }
     </style>
 </head>
 <body>
-    <h1>✅ Debug Page Loaded Successfully! ✅</h1>
-    <p>If you see this, your server and the Telegram Mini App link are working correctly on this device.</p>
-    <p>Check the console (bottom right icon) for errors related to the Telegram WebApp object.</p>
+    <h1>TenaBot Debug: Initializing...</h1>
+    <p id="status-message">Attempting to load WebApp API and Debugger...</p>
+    <div id="debug-info"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const statusElement = document.createElement('p');
-            statusElement.style.marginTop = '20px';
-            
+            const statusMsg = document.getElementById('status-message');
+            const debugInfo = document.getElementById('debug-info');
+
+            // --- 1. Initialize Eruda safely (Wait for it to load) ---
+            if (window.eruda) {
+                eruda.init();
+                statusMsg.innerHTML += '<br>✅ **Eruda Console Initialized** (Check bottom right icon)';
+            } else {
+                statusMsg.innerHTML += '<br>⚠️ **Eruda Failed to Load** (Possible Content Security Policy block)';
+            }
+
+            // --- 2. Check Telegram WebApp API ---
             if (window.Telegram && window.Telegram.WebApp) {
-                // Initialize the Telegram WebApp object
                 window.Telegram.WebApp.ready(); 
                 
-                // Change the main color to Telegram's background for proof of WebApp API loading
+                // Change background to prove API is working and to match Telegram theme
                 const bgColor = window.Telegram.WebApp.themeParams.bg_color || '#212122';
                 document.body.style.backgroundColor = bgColor;
+                document.body.style.color = window.Telegram.WebApp.themeParams.text_color || 'white';
                 
-                statusElement.innerHTML = '<strong>Web App API Status: READY</strong> (Background color changed to match Telegram theme)';
+                debugInfo.innerHTML += `
+                    <p style="color: green;">✅ **Web App API Status: READY**</p>
+                    <p>Background color should be a Telegram dark theme color.</p>
+                `;
+
+                if (window.eruda) {
+                    eruda.console.log('--- Telegram WebApp Success ---');
+                    eruda.console.log('User Data:', window.Telegram.WebApp.initDataUnsafe.user);
+                }
+
             } else {
-                statusElement.innerHTML = '<strong>Web App API Status: ERROR</strong> (window.Telegram.WebApp is undefined)';
-                statusElement.style.color = 'red';
+                // If this message appears on mobile, the core Web App connection failed
+                debugInfo.innerHTML += '<p style="color: red;">❌ **Web App API Status: FAILED** (window.Telegram.WebApp is undefined)</p>';
+                if (window.eruda) {
+                    eruda.console.log('--- Telegram WebApp Failure ---');
+                }
             }
-            document.body.appendChild(statusElement);
             
-            // Log the key objects to the Eruda console
-            if (window.eruda) {
-                 eruda.console.log('--- Telegram WebApp Debug ---');
-                 eruda.console.log('window.Telegram:', window.Telegram);
-                 if (window.Telegram && window.Telegram.WebApp) {
-                     eruda.console.log('WebApp Initial Data:', window.Telegram.WebApp.initDataUnsafe);
-                 }
-            }
+            statusMsg.innerHTML = '<h1>TenaBot Debug: Complete</h1>';
         });
     </script>
 </body>
