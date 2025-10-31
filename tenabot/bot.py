@@ -55,6 +55,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
+    
+    
+    # ✅ Web App button (your mini app)
+    web_app = WebAppInfo(url="https://tena.bdnsys.com/bot/test/")  # Note: trailing slash included
+
+    keyboard = [
+        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
+    ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # ✅ Reply to user
