@@ -2,154 +2,172 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TenaBot — Your Resume Assistant</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TenaBot — Your Resume Assistant</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--tg-theme-bg-color, #1c1c1c);
-            color: var(--tg-theme-text-color, #fff);
-            transition: background-color 0.3s, color 0.3s;
-        }
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--tg-theme-bg-color, #1c1c1c);
+      color: var(--tg-theme-text-color, #fff);
+      transition: background-color 0.3s, color 0.3s;
+    }
 
-        .btn {
-            background-color: var(--tg-theme-button-color, #5E62F4);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.2s;
-            width: 100%;
-        }
+    .btn {
+      background-color: var(--tg-theme-button-color, #5E62F4);
+      color: var(--tg-theme-button-text-color, #fff);
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+      width: 100%;
+    }
 
-        .btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
 
-        .card {
-            background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-    </style>
+    .card {
+      background-color: var(--tg-theme-secondary-bg-color, #2b2b2b);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+  </style>
 </head>
 
 <body class="h-screen flex items-center justify-center">
 
-    <div class="max-w-md w-full p-6">
-        <div class="card">
-            <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
-            <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
+  <div class="max-w-md w-full p-6">
+    <div class="card">
+      <h1 class="text-2xl font-bold mb-2">👋 Welcome to TenaBot</h1>
+      <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
 
-            <div class="mb-4">
-                <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span>
-                </p>
-                <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span>
-                </p>
+      <div class="mb-4">
+        <p class="text-gray-300">
+          <span class="font-semibold">User:</span>
+          <span id="user-name">Loading...</span>
+        </p>
+        <p class="text-gray-300">
+          <span class="font-semibold">Telegram ID:</span>
+          <span id="user-id">...</span>
+        </p>
+      </div>
 
-
-             
-            </div>
-
-            <button id="uploadBtn" class="btn">📄 Upload Resume</button>
-        </div>
+      <button id="uploadBtn" class="btn">📄 Upload Resume</button>
     </div>
+  </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
+  <script>
+    // === GLOBAL ERROR HANDLERS ===
+    window.onerror = function (message, source, lineno, colno, error) {
+      console.error(`[TenaBot:ERROR] ${message} at ${source}:${lineno}:${colno}`, error);
+    };
 
+    window.addEventListener("unhandledrejection", function (event) {
+      console.error("[TenaBot:UnhandledPromise]", event.reason);
+    });
 
+    const tg = window.Telegram.WebApp;
 
-        tg.ready(); // signals readiness
+    console.log("[TenaBot] Initializing Telegram WebApp...");
+    tg.ready();
+    tg.expand();
 
+    // === Register User Function ===
+    async function registerUser(userData) {
+      console.log("[TenaBot] Registering user:", userData);
 
-        tg.expand(); // expands the mini-app
-
-
-        function registerUser(userData) {
-            fetch('https://tena.bdnsys.com/api/register_telegram_user/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    telegram_id: userData.id,
-                    username: userData.username,
-                    first_name: userData.first_name,
-                    last_name: userData.last_name,
-                    avatar_url: userData.photo_url || null,
-                }),
-            })
-                .then(res => res.json())
-                .then(data => {
-                    console.log('API response:', data);
-                    if (data.success && data.user) {
-                        updateUI(data.user);
-                    } else {
-                        console.error('Registration failed:', data);
-                    }
-                })
-                .catch(err => console.error('Fetch error:', err));
-        }
-
-
-        function updateUI(user) {
-            document.getElementById('user-name').textContent =
-                `${user.first_name || ''} ${user.last_name || ''} (@${user.username || 'N/A'})`;
-            document.getElementById('user-id').textContent = user.telegram_id || user.id;
-
-
-        }
-       
-
-        // Wait for Telegram WebApp to be ready before accessing user
-        document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(() => {
-                const userData = tg.initDataUnsafe.user;
-                if (userData) {
-                    console.log('User data:', userData);
-                } else {
-                    console.warn('No user data available. Launch app from a bot chat!');
-                }
-
-                console.log('Telegram userData:', userData);
-                if (userData) {
-                    updateUI({
-                        first_name: userData.first_name,
-                        last_name: userData.last_name,
-                        username: userData.username,
-                        telegram_id: userData.id
-                    });
-                    registerUser(userData);
-                } else {
-                    updateUI({
-                        first_name: "blue",
-                        last_name: "blue",
-                        username: "blue",
-                        telegram_id: "blue"
-                    });
-                    updateCheckUI(userData)
-                    console.warn("No Telegram user data found");
-                }
-            }, 500); // short delay to ensure data is loaded
+      try {
+        const response = await fetch("https://tena.bdnsys.com/api/register_telegram_user/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telegram_id: userData.id,
+            username: userData.username,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            avatar_url: userData.photo_url || null,
+          }),
         });
 
-        document.getElementById('uploadBtn').addEventListener('click', () => {
-            tg.showAlert("File upload feature coming soon 🚀");
-        })
-        window.onerror = function(message, source, lineno, colno, error) {
-        alert("Error: " + message + "\nSource: " + source + "\nLine: " + lineno);
+        console.log("[TenaBot] Fetch response status:", response.status);
+
+        if (!response.ok) {
+          const text = await response.text();
+          console.error("[TenaBot] API returned non-200:", response.status, text);
+          return;
         }
 
-        ;
-    </script>
+        const data = await response.json();
+        console.log("[TenaBot] API response:", data);
 
+        if (data.success && data.user) {
+          updateUI(data.user);
+        } else {
+          console.warn("[TenaBot] Registration failed or malformed response:", data);
+        }
+      } catch (err) {
+        console.error("[TenaBot] Network or Fetch error:", err);
+      }
+    }
+
+    // === Update UI Function ===
+    function updateUI(user) {
+      try {
+        console.log("[TenaBot] Updating UI for user:", user);
+        document.getElementById("user-name").textContent =
+          `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
+        document.getElementById("user-id").textContent = user.telegram_id || user.id || "N/A";
+      } catch (err) {
+        console.error("[TenaBot] Failed to update UI:", err);
+      }
+    }
+
+    // === DOM Ready ===
+    document.addEventListener("DOMContentLoaded", () => {
+      console.log("[TenaBot] DOM loaded, waiting for Telegram data...");
+
+      setTimeout(() => {
+        const userData = tg?.initDataUnsafe?.user;
+        console.log("[TenaBot] Telegram initDataUnsafe:", tg.initDataUnsafe);
+
+        if (userData) {
+          console.log("[TenaBot] Telegram user data found:", userData);
+          updateUI({
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            username: userData.username,
+            telegram_id: userData.id,
+          });
+          registerUser(userData);
+        } else {
+          console.warn("[TenaBot] No Telegram user data available. Using fallback values.");
+          updateUI({
+            first_name: "Guest",
+            last_name: "",
+            username: "unknown",
+            telegram_id: "N/A",
+          });
+        }
+      }, 500);
+    });
+
+    // === Upload Button ===
+    document.getElementById("uploadBtn").addEventListener("click", () => {
+      console.log("[TenaBot] Upload button clicked.");
+      try {
+        tg.showAlert("File upload feature coming soon 🚀");
+      } catch (err) {
+        console.error("[TenaBot] Failed to show Telegram alert:", err);
+      }
+    });
+  </script>
 </body>
-
 </html>
