@@ -5,6 +5,7 @@ from . import views
 
 urlpatterns = [
     path('',views.home,name='home'),
-    path('test/',views.test,name='test'),
+    path('upload-resume/', views.ResumeUploadView.as_view(), name='upload-resume')
+    
  
 ]

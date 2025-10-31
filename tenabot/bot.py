@@ -51,12 +51,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ✅ Web App button (your mini app)
     web_app = WebAppInfo(url="https://tena.bdnsys.com/bot/")  # Note: trailing slash included
-    web_app_test = WebAppInfo(url="https://tena.bdnsys.com/bot/test/")  # Note: trailing slash included
 
 
     keyboard = [
-        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)],
-        [InlineKeyboardButton("🚀 Launch Test", web_app=web_app_test)]
+        [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
     
     
