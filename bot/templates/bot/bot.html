@@ -142,7 +142,12 @@
 
         document.getElementById('uploadBtn').addEventListener('click', () => {
             tg.showAlert("File upload feature coming soon 🚀");
-        });
+        })
+        window.onerror = function(message, source, lineno, colno, error) {
+        alert("Error: " + message + "\nSource: " + source + "\nLine: " + lineno);
+        }
+
+        ;
     </script>
 
 </body>
