@@ -23,3 +23,14 @@ class ResumeUploadSerializer(serializers.Serializer):
             raise serializers.ValidationError("File must be a PDF.")
 
         return value
+    
+class ResumeListSerializer(serializers.Serializer):
+    """
+    Serializer for listing public Resume data.
+    Maps SQLAlchemy object fields to JSON output.
+    """
+    id = serializers.IntegerField()
+    job_title = serializers.CharField(max_length=150)
+    file_path = serializers.CharField(max_length=255)
+    created_at = serializers.DateTimeField()
+    processed = serializers.BooleanField()
