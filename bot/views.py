@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
 # Import Serializer
-from .serializers import ResumeUploadSerializer 
+from .serializers import ResumeUploadSerializer ,ResumeListSerializer
 
 # Import SQLAlchemy components
 from tenabot.db import get_db
@@ -149,3 +149,61 @@ class ResumeUploadView(APIView):
         finally:
             # 4. Close the SQLAlchemy session
             db_generator.close()
+            
+            
+
+
+class ResumeListView(APIView):
+    """
+    Returns a public, paginated list of all uploaded resumes.
+    Uses SQLAlchemy for data access and custom logic for pagination.
+    """
+    # The user requested that this view is not protected by auth.
+    permission_classes = [permissions.AllowAny] 
+
+    def get(self, request, *args, **kwargs):
+        db_generator = get_db()
+        db = next(db_generator)
+        
+        try:
+            # 1. Pagination Parameters
+            # Default to page 1, size 10. Max size is capped at 50 for safety.
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 10))
+            page_size = min(page_size, 50) # Safety limit
+            offset = (page - 1) * page_size
+            
+            # 2. Get total count for pagination headers
+            # Note: count() executes a separate query optimized for counting.
+            total_count = db.query(Resume).count()
+            
+            # 3. Fetch paginated data using SQLAlchemy's limit and offset
+            resumes = db.query(Resume).order_by(
+                Resume.created_at.desc()
+            ).limit(page_size).offset(offset).all()
+
+            # 4. Serialize data
+            serializer = ResumeListSerializer(resumes, many=True)
+            
+            # 5. Return paginated response
+            response_data = {
+                "count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "results": serializer.data,
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except ValueError:
+            # Handles non-integer values for page or page_size
+            return Response({"detail": "Invalid page or page_size parameter."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"Error fetching resumes: {e}")
+            return Response({"detail": "A server error occurred while fetching resumes."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        finally:
+            # 4. Close the SQLAlchemy session
+            db_generator.close()
+            
