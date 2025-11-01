@@ -4,6 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, Upd
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from asgiref.sync import sync_to_async
+from django.conf import settings
 import django
 import sys
 
@@ -20,7 +21,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tenabot.settings')
 django.setup()
 
 load_dotenv()
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+BOT_TOKEN =settings.TELEGRAM_BOT_TOKEN
 
 
 @sync_to_async
