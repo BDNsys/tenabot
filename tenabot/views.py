@@ -9,6 +9,7 @@ from users.models import User # Your custom user model
 from users.serializers import UserSerializer
 import urllib.parse
 from rest_framework import status
+from django.middleware.csrf import get_token
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -64,7 +65,10 @@ def register_telegram_user(request):
     login(request, user) 
 
     serializer = UserSerializer(user)
-    return Response({"success": True, "user": serializer.data})
+    return Response({
+        "success": True,
+        "user": serializer.data,
+        "csrf_token": get_token(request),})
 # from rest_framework.decorators import api_view, permission_classes
 # from rest_framework.permissions import AllowAny
 # from rest_framework.response import Response
