@@ -6,6 +6,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 
+# --- NEW IMPORTS ---
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
 # Import Serializer
 from .serializers import ResumeUploadSerializer 
 
@@ -23,7 +27,7 @@ def home(request):
     return render(request, 'bot/bot.html')
 
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 class ResumeUploadView(APIView):
     """
     Handles PDF file upload, validation, and creation of associated SQLAlchemy models.
