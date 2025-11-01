@@ -135,7 +135,7 @@
   <script>
     // === CONFIGURATION ===
     const API_REGISTER_URL = "https://tena.bdnsys.com/api/register_telegram_user/";
-    const API_UPLOAD_URL = "https://tena.bdnsys.com/bot/upload-resume/"; // Your new DRF endpoint
+    const API_UPLOAD_URL = "https://tena.bdnsys.com/bot/upload-resume/";
 
     // === TELEGRAM WEB APP INIT ===
     const tg = window.Telegram.WebApp;
@@ -144,7 +144,10 @@
     tg.setHeaderColor("secondary_bg_color");
     tg.setBackgroundColor("bg_color");
 
-    // === STATE MANAGEMENT / VIEW SWITCHER ===
+    // === STATE ===
+    let csrfToken = null; // <-- we'll store Django's CSRF token here
+
+    // === VIEW MANAGEMENT ===
     const views = {
       'welcome': document.getElementById('welcome-view'),
       'upload': document.getElementById('upload-view'),
@@ -152,7 +155,6 @@
     };
 
     function switchView(targetViewId, details = null) {
-      console.log(`[TenaBot] Switching view to: ${targetViewId}`);
       Object.keys(views).forEach(id => {
         if (id === targetViewId) {
           views[id].classList.remove('hidden-view');
@@ -163,19 +165,18 @@
 
       if (targetViewId === 'success' && details) {
         document.getElementById('success-details').innerHTML = `
-                <p><strong>Resume ID:</strong> ${details.resume_id}</p>
-                <p><strong>Job Title:</strong> ${details.job_title}</p>
-                <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
-            `;
+        <p><strong>Resume ID:</strong> ${details.resume_id}</p>
+        <p><strong>Job Title:</strong> ${details.job_title}</p>
+        <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
+      `;
       }
     }
 
     // === USER REGISTRATION LOGIC ===
     async function registerUser(userData) {
-      // 🚨 CRITICAL CHANGE: Get and send the full initData
       const initData = tg?.initData;
       if (!initData) {
-        console.error("[TenaBot] Telegram initData is missing. Cannot register/authenticate.");
+        console.error("[TenaBot] Telegram initData is missing.");
         return;
       }
 
@@ -184,10 +185,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            // Send the security data
             initData: initData,
-
-            // Send basic data for convenience, although server uses initData for truth
             telegram_id: userData.id,
             username: userData.username,
             first_name: userData.first_name,
@@ -196,33 +194,32 @@
           }),
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("[TenaBot] API returned non-200 on register:", response.status, errorText);
-          tg.showAlert("Authentication failed. Please restart the bot.");
-          return;
-        }
-
         const data = await response.json();
-        if (data.success && data.user) {
+        if (response.ok && data.success && data.user) {
           updateUI(data.user);
-          // 🚨 User is now logged in via session cookie from Django!
+
+          // ✅ Save CSRF token globally
+          csrfToken = data.csrf_token;
+          console.log("[TenaBot] CSRF Token saved:", csrfToken);
+
+          // ✅ Store token in sessionStorage as a backup
+          sessionStorage.setItem("csrfToken", csrfToken);
+
         } else {
-          console.warn("[TenaBot] Registration failed or malformed response:", data);
+          console.warn("[TenaBot] Registration failed:", data);
+          tg.showAlert("Authentication failed. Please restart the bot.");
         }
       } catch (err) {
-        console.error("[TenaBot] Network or Fetch error during registration:", err);
+        console.error("[TenaBot] Registration error:", err);
+        tg.showAlert("Network error during registration.");
       }
     }
-    // === UI UPDATE LOGIC ===
+
+    // === UI UPDATE ===
     function updateUI(user) {
-      try {
-        document.getElementById("user-name").textContent =
-          `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
-        document.getElementById("user-id").textContent = user.telegram_id || user.id || "N/A";
-      } catch (err) {
-        console.error("[TenaBot] Failed to update UI:", err);
-      }
+      document.getElementById("user-name").textContent =
+        `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
+      document.getElementById("user-id").textContent = user.telegram_id || user.id || "N/A";
     }
 
     // === FILE UPLOAD LOGIC ===
@@ -241,7 +238,6 @@
       const fileInput = document.getElementById('pdf_file');
       const jobTitleInput = document.getElementById('job_title');
 
-      // Form validation check
       if (!fileInput.files[0]) {
         showError("Please select a PDF file.");
         resetUploadButton();
@@ -252,51 +248,44 @@
       formData.append('pdf_file', fileInput.files[0]);
       formData.append('job_title', jobTitleInput.value);
 
-      // Crucial part: Get Django's CSRF token for the authenticated POST request
-      // Since WebApp POSTs are difficult with cookies/sessions, we rely on 
-      // Django's `SessionAuthentication` and hope the WebApp container handles cookies. 
-      // In a real DRF setup, we might pass Telegram data as a header/token.
+      // Retrieve token (from memory or sessionStorage)
+      const token = csrfToken || sessionStorage.getItem("csrfToken");
+      if (!token) {
+        showError("CSRF token missing. Please restart the bot.");
+        resetUploadButton();
+        return;
+      }
 
       try {
         const response = await fetch(API_UPLOAD_URL, {
           method: 'POST',
-          // Important: DO NOT set Content-Type header when sending FormData.
-          // The browser sets it automatically with the correct boundary.
+          headers: {
+            'X-CSRFToken': token, // ✅ Include CSRF token
+          },
           body: formData,
+          credentials: 'include', // ✅ Ensure cookies (session) are sent
         });
 
         const data = await response.json();
 
         if (response.ok) {
-          // SUCCESS
           switchView('success', {
             resume_id: data.resume_id,
             job_title: jobTitleInput.value,
             uploads_today: data.uploads_today
           });
           tg.MainButton.hide();
-          tg.showPopup({ message: "Resume successfully uploaded and processing started!" });
-
+          tg.showPopup({ message: "Resume successfully uploaded!" });
         } else {
-          // FAILURE (Validation error, server error, etc.)
           let errorMessage = "An unknown error occurred.";
-
-          if (data.non_field_errors) {
-            errorMessage = data.non_field_errors[0];
-          } else if (data.pdf_file) {
-            // This handles the 7MB limit error from the Django Serializer
-            errorMessage = `File Error: ${data.pdf_file[0]}`;
-          } else if (data.detail) {
-            errorMessage = data.detail; // e.g., Not Authenticated
-          } else {
-            errorMessage = JSON.stringify(data);
-          }
-
+          if (data.detail) errorMessage = data.detail;
+          else if (data.pdf_file) errorMessage = data.pdf_file[0];
+          else if (data.non_field_errors) errorMessage = data.non_field_errors[0];
           showError(errorMessage);
           resetUploadButton();
         }
       } catch (error) {
-        console.error("[TenaBot] Fetch error during upload:", error);
+        console.error("[TenaBot] Upload error:", error);
         showError("Network connection failed. Please try again.");
         resetUploadButton();
       }
@@ -316,10 +305,8 @@
       tg.MainButton.hide();
     }
 
-
     // === EVENT LISTENERS ===
     document.addEventListener("DOMContentLoaded", () => {
-      // Initial Telegram User Data check and registration call
       const userData = tg?.initDataUnsafe?.user;
       if (userData) {
         updateUI({
@@ -333,26 +320,16 @@
         updateUI({ first_name: "Guest", last_name: "", username: "unknown", telegram_id: "N/A" });
       }
 
-      // 1. Initial button click to go to upload form
-      document.getElementById("goToUploadBtn").addEventListener("click", () => {
-        switchView('upload');
-      });
-
-      // 2. Cancel button to go back to welcome
+      document.getElementById("goToUploadBtn").addEventListener("click", () => switchView('upload'));
       document.getElementById("cancelUploadBtn").addEventListener("click", () => {
         switchView('welcome');
         resetUploadButton();
       });
-
-      // 3. Form submission handles the actual upload
       document.getElementById("uploadForm").addEventListener("submit", handleFileUpload);
-
-      // 4. Close Web App button on success
-      document.getElementById("closeWebAppBtn").addEventListener("click", () => {
-        tg.close();
-      });
+      document.getElementById("closeWebAppBtn").addEventListener("click", () => tg.close());
     });
   </script>
+
 </body>
 
 </html>
