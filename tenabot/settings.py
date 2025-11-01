@@ -166,3 +166,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media/')
 
 SECURE_BROWSER_XSS_FILTER = True
 X_FRAME_OPTIONS = 'ALLOWALL'
+
+# rest framework
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication' # You may remove this
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated', # Default for most views
+    ]
+}
+
+TELEGRAM_BOT_TOKEN=BOT_TOKEN

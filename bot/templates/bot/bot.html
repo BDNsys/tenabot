@@ -108,11 +108,12 @@
 
       <form id="uploadForm">
         <label for="job_title" class="block text-sm font-medium mb-1">Target Job Title</label>
-        <input type="text" id="job_title" name="job_title" class="input-field" placeholder="e.g., Senior Software Engineer" required>
+        <input type="text" id="job_title" name="job_title" class="input-field"
+          placeholder="e.g., Senior Software Engineer" required>
 
         <label for="pdf_file" class="block text-sm font-medium mb-1">Select PDF File</label>
         <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" class="input-field pt-2" required>
-        
+
         <p id="upload-error" class="error-message hidden-view"></p>
 
         <button type="submit" id="submitUploadBtn" class="btn mt-4">⬆️ Start Upload</button>
@@ -121,12 +122,12 @@
     </div>
 
     <div id="success-view" class="card hidden-view text-center">
-        <div class="text-5xl mb-4">🎉</div>
-        <h2 class="text-2xl font-bold mb-2">Upload Successful!</h2>
-        <p class="text-gray-400 mb-6">Your resume is now being analyzed by TenaBot.</p>
-        <p id="success-details" class="text-sm text-gray-300 mb-6"></p>
+      <div class="text-5xl mb-4">🎉</div>
+      <h2 class="text-2xl font-bold mb-2">Upload Successful!</h2>
+      <p class="text-gray-400 mb-6">Your resume is now being analyzed by TenaBot.</p>
+      <p id="success-details" class="text-sm text-gray-300 mb-6"></p>
 
-        <button id="closeWebAppBtn" class="btn mt-4">Close Web App</button>
+      <button id="closeWebAppBtn" class="btn mt-4">Close Web App</button>
     </div>
 
   </div>
@@ -145,38 +146,48 @@
 
     // === STATE MANAGEMENT / VIEW SWITCHER ===
     const views = {
-        'welcome': document.getElementById('welcome-view'),
-        'upload': document.getElementById('upload-view'),
-        'success': document.getElementById('success-view'),
+      'welcome': document.getElementById('welcome-view'),
+      'upload': document.getElementById('upload-view'),
+      'success': document.getElementById('success-view'),
     };
 
     function switchView(targetViewId, details = null) {
-        console.log(`[TenaBot] Switching view to: ${targetViewId}`);
-        Object.keys(views).forEach(id => {
-            if (id === targetViewId) {
-                views[id].classList.remove('hidden-view');
-            } else {
-                views[id].classList.add('hidden-view');
-            }
-        });
+      console.log(`[TenaBot] Switching view to: ${targetViewId}`);
+      Object.keys(views).forEach(id => {
+        if (id === targetViewId) {
+          views[id].classList.remove('hidden-view');
+        } else {
+          views[id].classList.add('hidden-view');
+        }
+      });
 
-        if (targetViewId === 'success' && details) {
-            document.getElementById('success-details').innerHTML = `
+      if (targetViewId === 'success' && details) {
+        document.getElementById('success-details').innerHTML = `
                 <p><strong>Resume ID:</strong> ${details.resume_id}</p>
                 <p><strong>Job Title:</strong> ${details.job_title}</p>
                 <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
             `;
-        }
+      }
     }
 
     // === USER REGISTRATION LOGIC ===
     async function registerUser(userData) {
-      // (Your existing registration logic, slightly cleaned up)
+      // 🚨 CRITICAL CHANGE: Get and send the full initData
+      const initData = tg?.initData;
+      if (!initData) {
+        console.error("[TenaBot] Telegram initData is missing. Cannot register/authenticate.");
+        return;
+      }
+
       try {
         const response = await fetch(API_REGISTER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            // Send the security data
+            initData: initData,
+
+            // Send basic data for convenience, although server uses initData for truth
             telegram_id: userData.id,
             username: userData.username,
             first_name: userData.first_name,
@@ -186,13 +197,16 @@
         });
 
         if (!response.ok) {
-          console.error("[TenaBot] API returned non-200:", response.status, await response.text());
+          const errorText = await response.text();
+          console.error("[TenaBot] API returned non-200 on register:", response.status, errorText);
+          tg.showAlert("Authentication failed. Please restart the bot.");
           return;
         }
 
         const data = await response.json();
         if (data.success && data.user) {
           updateUI(data.user);
+          // 🚨 User is now logged in via session cookie from Django!
         } else {
           console.warn("[TenaBot] Registration failed or malformed response:", data);
         }
@@ -200,7 +214,6 @@
         console.error("[TenaBot] Network or Fetch error during registration:", err);
       }
     }
-
     // === UI UPDATE LOGIC ===
     function updateUI(user) {
       try {
@@ -214,131 +227,132 @@
 
     // === FILE UPLOAD LOGIC ===
     async function handleFileUpload(event) {
-        event.preventDefault();
+      event.preventDefault();
 
-        const form = event.target;
-        const submitBtn = document.getElementById("submitUploadBtn");
-        const errorDisplay = document.getElementById("upload-error");
+      const form = event.target;
+      const submitBtn = document.getElementById("submitUploadBtn");
+      const errorDisplay = document.getElementById("upload-error");
 
-        errorDisplay.classList.add('hidden-view');
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Uploading...';
-        tg.MainButton.show().setText('Uploading...');
+      errorDisplay.classList.add('hidden-view');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading...';
+      tg.MainButton.show().setText('Uploading...');
 
-        const fileInput = document.getElementById('pdf_file');
-        const jobTitleInput = document.getElementById('job_title');
-        
-        // Form validation check
-        if (!fileInput.files[0]) {
-            showError("Please select a PDF file.");
-            resetUploadButton();
-            return;
+      const fileInput = document.getElementById('pdf_file');
+      const jobTitleInput = document.getElementById('job_title');
+
+      // Form validation check
+      if (!fileInput.files[0]) {
+        showError("Please select a PDF file.");
+        resetUploadButton();
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('pdf_file', fileInput.files[0]);
+      formData.append('job_title', jobTitleInput.value);
+
+      // Crucial part: Get Django's CSRF token for the authenticated POST request
+      // Since WebApp POSTs are difficult with cookies/sessions, we rely on 
+      // Django's `SessionAuthentication` and hope the WebApp container handles cookies. 
+      // In a real DRF setup, we might pass Telegram data as a header/token.
+
+      try {
+        const response = await fetch(API_UPLOAD_URL, {
+          method: 'POST',
+          // Important: DO NOT set Content-Type header when sending FormData.
+          // The browser sets it automatically with the correct boundary.
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // SUCCESS
+          switchView('success', {
+            resume_id: data.resume_id,
+            job_title: jobTitleInput.value,
+            uploads_today: data.uploads_today
+          });
+          tg.MainButton.hide();
+          tg.showPopup({ message: "Resume successfully uploaded and processing started!" });
+
+        } else {
+          // FAILURE (Validation error, server error, etc.)
+          let errorMessage = "An unknown error occurred.";
+
+          if (data.non_field_errors) {
+            errorMessage = data.non_field_errors[0];
+          } else if (data.pdf_file) {
+            // This handles the 7MB limit error from the Django Serializer
+            errorMessage = `File Error: ${data.pdf_file[0]}`;
+          } else if (data.detail) {
+            errorMessage = data.detail; // e.g., Not Authenticated
+          } else {
+            errorMessage = JSON.stringify(data);
+          }
+
+          showError(errorMessage);
+          resetUploadButton();
         }
-
-        const formData = new FormData();
-        formData.append('pdf_file', fileInput.files[0]);
-        formData.append('job_title', jobTitleInput.value);
-
-        // Crucial part: Get Django's CSRF token for the authenticated POST request
-        // Since WebApp POSTs are difficult with cookies/sessions, we rely on 
-        // Django's `SessionAuthentication` and hope the WebApp container handles cookies. 
-        // In a real DRF setup, we might pass Telegram data as a header/token.
-        
-        try {
-            const response = await fetch(API_UPLOAD_URL, {
-                method: 'POST',
-                // Important: DO NOT set Content-Type header when sending FormData.
-                // The browser sets it automatically with the correct boundary.
-                body: formData,
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                // SUCCESS
-                switchView('success', {
-                    resume_id: data.resume_id,
-                    job_title: jobTitleInput.value,
-                    uploads_today: data.uploads_today
-                });
-                tg.MainButton.hide();
-                tg.showPopup({message: "Resume successfully uploaded and processing started!"});
-
-            } else {
-                // FAILURE (Validation error, server error, etc.)
-                let errorMessage = "An unknown error occurred.";
-                
-                if (data.non_field_errors) {
-                    errorMessage = data.non_field_errors[0];
-                } else if (data.pdf_file) {
-                    // This handles the 7MB limit error from the Django Serializer
-                    errorMessage = `File Error: ${data.pdf_file[0]}`;
-                } else if (data.detail) {
-                    errorMessage = data.detail; // e.g., Not Authenticated
-                } else {
-                    errorMessage = JSON.stringify(data);
-                }
-
-                showError(errorMessage);
-                resetUploadButton();
-            }
-        } catch (error) {
-            console.error("[TenaBot] Fetch error during upload:", error);
-            showError("Network connection failed. Please try again.");
-            resetUploadButton();
-        }
+      } catch (error) {
+        console.error("[TenaBot] Fetch error during upload:", error);
+        showError("Network connection failed. Please try again.");
+        resetUploadButton();
+      }
     }
 
     function showError(message) {
-        const errorDisplay = document.getElementById("upload-error");
-        errorDisplay.textContent = message;
-        errorDisplay.classList.remove('hidden-view');
-        tg.showAlert(message);
+      const errorDisplay = document.getElementById("upload-error");
+      errorDisplay.textContent = message;
+      errorDisplay.classList.remove('hidden-view');
+      tg.showAlert(message);
     }
 
     function resetUploadButton() {
-        const submitBtn = document.getElementById("submitUploadBtn");
-        submitBtn.disabled = false;
-        submitBtn.textContent = '⬆️ Start Upload';
-        tg.MainButton.hide();
+      const submitBtn = document.getElementById("submitUploadBtn");
+      submitBtn.disabled = false;
+      submitBtn.textContent = '⬆️ Start Upload';
+      tg.MainButton.hide();
     }
 
 
     // === EVENT LISTENERS ===
     document.addEventListener("DOMContentLoaded", () => {
-        // Initial Telegram User Data check and registration call
-        const userData = tg?.initDataUnsafe?.user;
-        if (userData) {
-            updateUI({
-                first_name: userData.first_name,
-                last_name: userData.last_name,
-                username: userData.username,
-                telegram_id: userData.id,
-            });
-            registerUser(userData);
-        } else {
-            updateUI({ first_name: "Guest", last_name: "", username: "unknown", telegram_id: "N/A" });
-        }
-
-        // 1. Initial button click to go to upload form
-        document.getElementById("goToUploadBtn").addEventListener("click", () => {
-            switchView('upload');
+      // Initial Telegram User Data check and registration call
+      const userData = tg?.initDataUnsafe?.user;
+      if (userData) {
+        updateUI({
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          username: userData.username,
+          telegram_id: userData.id,
         });
+        registerUser(userData);
+      } else {
+        updateUI({ first_name: "Guest", last_name: "", username: "unknown", telegram_id: "N/A" });
+      }
 
-        // 2. Cancel button to go back to welcome
-        document.getElementById("cancelUploadBtn").addEventListener("click", () => {
-            switchView('welcome');
-            resetUploadButton();
-        });
+      // 1. Initial button click to go to upload form
+      document.getElementById("goToUploadBtn").addEventListener("click", () => {
+        switchView('upload');
+      });
 
-        // 3. Form submission handles the actual upload
-        document.getElementById("uploadForm").addEventListener("submit", handleFileUpload);
+      // 2. Cancel button to go back to welcome
+      document.getElementById("cancelUploadBtn").addEventListener("click", () => {
+        switchView('welcome');
+        resetUploadButton();
+      });
 
-        // 4. Close Web App button on success
-        document.getElementById("closeWebAppBtn").addEventListener("click", () => {
-            tg.close();
-        });
+      // 3. Form submission handles the actual upload
+      document.getElementById("uploadForm").addEventListener("submit", handleFileUpload);
+
+      // 4. Close Web App button on success
+      document.getElementById("closeWebAppBtn").addEventListener("click", () => {
+        tg.close();
+      });
     });
   </script>
 </body>
+
 </html>
