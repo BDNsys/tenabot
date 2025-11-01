@@ -5,8 +5,8 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-# --- NEW/UPDATED IMPORTS ---
-from rest_framework.authentication import TokenAuthentication
+# --- UPDATED IMPORTS ---
+from rest_framework.authentication import SessionAuthentication # Use SessionAuth
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
@@ -27,16 +27,14 @@ def home(request):
     return render(request, 'bot/bot.html')
 
 
-# Removed @method_decorator(csrf_exempt, name='dispatch')
+# Re-apply csrf_exempt here, as the client (Telegram Web App) cannot reliably provide the token.
+@method_decorator(csrf_exempt, name='dispatch')
 class ResumeUploadView(APIView):
     """
     Handles PDF file upload, validation, and creation of associated SQLAlchemy models.
-    
-    Uses TokenAuthentication, which makes it inherently safe from CSRF attacks
-    and removes the need for the csrf_exempt decorator.
     """
-    # Use TokenAuthentication for session-less, CSRF-exempt API usage
-    authentication_classes = [TokenAuthentication] 
+    # Use SessionAuthentication because the user is logged in via the Django 'login' function.
+    authentication_classes = [SessionAuthentication]
     # Use Django's IsAuthenticated permission
     permission_classes = [permissions.IsAuthenticated]
 

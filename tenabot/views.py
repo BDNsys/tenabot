@@ -1,151 +1,138 @@
-from django.shortcuts import render
-import os
-from datetime import date
-from django.conf import settings
-from rest_framework.views import APIView
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework import status, permissions
-# --- UPDATED IMPORTS ---
-from rest_framework.authentication import SessionAuthentication # Use SessionAuth
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
+from django.contrib.auth import login
+from .utils import check_telegram_data_integrity # Import the function above
+from users.models import User # Your custom user model
+from users.serializers import UserSerializer
+import urllib.parse
+from rest_framework import status
 
-# Import Serializer
-from .serializers import ResumeUploadSerializer 
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def register_telegram_user(request):
+    data = request.data
+    
+    # --- 1. Security Check ---
+    init_data = data.get("initData")
+    if not check_telegram_data_integrity(init_data):
+        return Response(
+            {"success": False, "detail": "Invalid Telegram data signature."}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
 
-# Import SQLAlchemy components
-from tenabot.db import get_db
-from .models import Resume, ResumeInfo, UsageTracker, User as SQLAlchemyUser # Alias User to avoid conflict
-from sqlalchemy.orm.exc import NoResultFound
-
-
-
-# Create your views here.
-
-
-def home(request):
-    return render(request, 'bot/bot.html')
-
-
-# Re-apply csrf_exempt here, as the client (Telegram Web App) cannot reliably provide the token.
-@method_decorator(csrf_exempt, name='dispatch')
-class ResumeUploadView(APIView):
-    """
-    Handles PDF file upload, validation, and creation of associated SQLAlchemy models.
-    """
-    # Use SessionAuthentication because the user is logged in via the Django 'login' function.
-    authentication_classes = [SessionAuthentication]
-    # Use Django's IsAuthenticated permission
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, *args, **kwargs):
-        # 1. Validation & Authentication
-        serializer = ResumeUploadSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-        pdf_file = serializer.validated_data['pdf_file']
-        job_title = serializer.validated_data['job_title']
+    # --- 2. Extract Telegram ID from safe data ---
+    # We must use the data from initData, which we just verified.
+    # The user object is nested and URL-encoded within initData.
+    try:
+        init_data_dict = dict(urllib.parse.parse_qsl(init_data))
+        user_json = init_data_dict.get('user') or init_data_dict.get('sender')
+        if not user_json:
+            return Response({"success": False, "detail": "User data missing from initData."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # The Django User is available via request.user
-        django_user = request.user 
-        
-        # 2. File Saving Logic
-        
-        # Define the target media subdirectory
-        pdf_dir = os.path.join(settings.MEDIA_ROOT, 'pdfs')
-        os.makedirs(pdf_dir, exist_ok=True)
-        
-        # Construct a unique file path (Good practice: use telegram_id/pk + unique name)
-        # Using the file's original name here for simplicity, but a UUID is better in production.
-        filename = f"{django_user.telegram_id}_{pdf_file.name}"
-        file_path = os.path.join(pdf_dir, filename)
-        
-        # Save the file to the media directory
-        try:
-            with open(file_path, 'wb+') as destination:
-                for chunk in pdf_file.chunks():
-                    destination.write(chunk)
-            
-            # The path stored in the DB should be relative to MEDIA_ROOT
-            db_file_path = os.path.join('pdfs', filename)
-            
-        except Exception as e:
-            return Response({"detail": f"File saving failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        # We need to manually parse the 'user' JSON string inside initData
+        import json
+        telegram_user_data = json.loads(urllib.parse.unquote(user_json))
+        telegram_id = str(telegram_user_data.get("id")) # Ensure it's a string
 
-        
-        # 3. SQLAlchemy Model Creation and Transaction Management
-        
-        # Use the SQLAlchemy dependency helper
-        db_generator = get_db()
-        db = next(db_generator) # Get the session object
-        
-        try:
-            # 3a. Find the SQLAlchemy User ID
-            # Assuming your Django User's 'telegram_id' maps to the SQLAlchemy User's 'telegram_id'
-            try:
-                # This finds the SQLAlchemy User corresponding to the authenticated Django User
-                sqla_user = db.query(SQLAlchemyUser).filter(
-                    SQLAlchemyUser.telegram_id == django_user.telegram_id
-                ).one()
-                user_id = sqla_user.id
-            except NoResultFound:
-                # Handle case where Django User exists but SQLa User doesn't (shouldn't happen in a stable system)
-                return Response({"detail": "Corresponding SQLAlchemy User not found."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception:
+        return Response({"success": False, "detail": "Failed to parse Telegram user data."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # 3b. Create Resume Record
-            new_resume = Resume(
-                user_id=user_id,
-                file_path=db_file_path,
-                job_title=job_title
-            )
-            db.add(new_resume)
-            db.flush() # Flush to get the new_resume.id
+    # --- 3. Get or Create User (Using verified telegram_id) ---
+    user, created = User.objects.get_or_create(
+        telegram_id=telegram_id,
+        defaults={
+            "username": telegram_user_data.get("username") or f"user_{telegram_id}",
+            "first_name": telegram_user_data.get("first_name", ""),
+            "last_name": telegram_user_data.get("last_name", ""),
+            "avatar_url": telegram_user_data.get("photo_url", None),
+        },
+    )
+    
+    if not created:
+        # Optionally update user info from the latest Telegram data
+        user.username = telegram_user_data.get("username", user.username)
+        user.first_name = telegram_user_data.get("first_name", user.first_name)
+        user.last_name = telegram_user_data.get("last_name", user.last_name)
+        user.avatar_url = telegram_user_data.get("photo_url", user.avatar_url)
+        user.save()
 
-            # 3c. Create Initial ResumeInfo Record (Optional but good practice)
-            new_resume_info = ResumeInfo(
-                resume_id=new_resume.id,
-                # Other fields will be NULL/default until parsing occurs
-            )
-            db.add(new_resume_info)
+    # --- 4. Log in the user (Set Session Cookie) ---
+    # This creates a session for the user, essential for DRF SessionAuthentication
+    login(request, user) 
 
-            # 3d. Update/Create UsageTracker
-            today = date.today()
-            usage = db.query(UsageTracker).filter(
-                UsageTracker.user_id == user_id
-            ).one_or_none()
+    serializer = UserSerializer(user)
+    return Response({"success": True, "user": serializer.data})
+# from rest_framework.decorators import api_view, permission_classes
+# from rest_framework.permissions import AllowAny
+# from rest_framework.response import Response
 
-            if usage:
-                # Update existing usage
-                if usage.date == today:
-                    usage.count += 1
-                else:
-                    # Reset count for a new day
-                    usage.date = today
-                    usage.count = 1
-            else:
-                # Create new usage tracker record
-                usage = UsageTracker(user_id=user_id, count=1)
-                db.add(usage)
-            
-            # Commit all changes to the database
-            db.commit()
+# from users.serializers import UserSerializer
 
-            return Response({
-                "message": "Resume uploaded and records created successfully.",
-                "resume_id": new_resume.id,
-                "file_path": db_file_path,
-                "uploads_today": usage.count
-            }, status=status.HTTP_201_CREATED)
 
-        except Exception as e:
-            # Rollback in case of any database error
-            db.rollback()
-            # Clean up the saved file on failure
-            if os.path.exists(file_path):
-                 os.remove(file_path)
-            return Response({"detail": f"Database transaction failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        finally:
-            # 4. Close the SQLAlchemy session
-            db_generator.close()
+# from django.contrib.auth import get_user_model
+
+
+# User = get_user_model()
+# @api_view(["POST"])
+# @permission_classes([AllowAny])
+# def register_telegram_user(request):
+#     data = request.data
+#     telegram_id = data.get("telegram_id")
+
+#     user, created = User.objects.get_or_create(
+#         telegram_id=telegram_id,
+#         defaults={
+#             "username": data.get("username") or f"user_{telegram_id}",
+#             "first_name": data.get("first_name", ""),
+#             "last_name": data.get("last_name", ""),
+#             "avatar_url": data.get("avatar_url", None),
+#         },
+#     )
+#     if not created:
+#         # Optionally update user info
+#         user.username = data.get("username", user.username)
+#         user.first_name = data.get("first_name", user.first_name)
+#         user.last_name = data.get("last_name", user.last_name)
+#         user.avatar_url = data.get("avatar_url", user.avatar_url)
+#         user.save()
+
+#     serializer = UserSerializer(user)
+#     return Response({"success": True, "user": serializer.data})
+
+   
+    
+# @api_view(["GET"])
+# @permission_classes([AllowAny])
+# def get_user(request, telegram_id):
+#     try:
+#         user = User.objects.get(telegram_id=telegram_id)
+#         serializer = UserSerializer(user)
+#         return Response({"success": True, "user": serializer.data})
+#     except User.DoesNotExist:
+#         return Response({"success": False, "error": "User not found"}, status=404) 
+# @api_view(["GET"])
+# @permission_classes([AllowAny])
+# def get_users(request):
+#     try:
+#         users = User.objects.all()
+#         serializer = UserSerializer(users,many=True)
+#         return Response({"success": True, "user": serializer.data})
+#     except User.DoesNotExist:
+#         return Response({"success": False, "error": "User not found"}, status=404)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
