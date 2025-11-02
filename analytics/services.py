@@ -7,7 +7,7 @@ from tenabot.db import get_db
 from bot.models import Resume,ResumeInfo
 from tenabot.pdf_service import generate_harvard_pdf
 from tenabot.notification import send_pdf_to_telegram
-
+import logging
 # Assuming you put the schema here or import it
 from .models import ResumeAnalysisSchema, FinalResumeOutput # Import the Pydantic schema
 
@@ -21,7 +21,7 @@ def extract_text_from_pdf(file_path: str) -> str:
                 text += page.get_text()
         return text
     except Exception as e:
-        print(f"Error reading PDF file {full_path}: {e}")
+        logging(f"Error reading PDF file {full_path}: {e}")
         raise
 
 def analyze_resume_with_gemini(resume_text: str) -> dict:
@@ -69,7 +69,7 @@ def analyze_resume_with_gemini(resume_text: str) -> dict:
         return data['resume_data']
 
     except Exception as e:
-        print(f"Gemini API or processing failed: {e}")
+        logging(f"Gemini API or processing failed: {e}")
         raise
 
 # --- Main Orchestration Function ---
@@ -89,7 +89,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         # 2. Analyze with Gemini
         analysis_data = analyze_resume_with_gemini(resume_text)
         
-        print("✅ Gemini raw response:", analysis_data)
+        logging("✅ Gemini raw response:", analysis_data)
         
         # 3. Find Resume and ResumeInfo records
         # Use a join to efficiently get the user's telegram_id
@@ -121,7 +121,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         resume.processed = True
 
         db.commit()
-        print(f"Successfully processed and saved ResumeInfo for ID: {resume_id}. Data committed.")
+        logging(f"Successfully processed and saved ResumeInfo for ID: {resume_id}. Data committed.")
 
         
         # 5. Generate Harvard-Style PDF
@@ -131,11 +131,11 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         if pdf_path:
             send_pdf_to_telegram(telegram_id, pdf_path, job_title)
         else:
-            print(f"Skipping Telegram notification: PDF generation failed for {resume_id}.")
+            logging(f"Skipping Telegram notification: PDF generation failed for {resume_id}.")
 
     except Exception as e:
         db.rollback()
-        print(f"Failed to process and save resume info for ID {resume_id}: {e}")
+        logging(f"Failed to process and save resume info for ID {resume_id}: {e}")
         
         # Optional: Send a failure notification if processing failed after file upload
         if telegram_id:
@@ -148,7 +148,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
                     parse_mode='Markdown'
                 )
             except Exception as bot_e:
-                print(f"Failed to send error notification to Telegram: {bot_e}")
+                logging(f"Failed to send error notification to Telegram: {bot_e}")
 
     finally:
         db_generator.close()
