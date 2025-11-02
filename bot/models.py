@@ -1,8 +1,9 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from sqlalchemy import (
     Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float
 )
 from sqlalchemy.orm import relationship, declarative_base
+
 
 Base = declarative_base()
 
@@ -65,7 +66,7 @@ class ResumeInfo(Base):
     skills = Column(JSON)
     core_values = Column(JSON)
     structured_json = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow) 
 
     # Relationships
     resume = relationship("Resume", back_populates="resume_info")
@@ -87,3 +88,6 @@ class UsageTracker(Base):
 
     def __repr__(self):
         return f"<UsageTracker user={self.user_id} count={self.count}>"
+    
+    
+  

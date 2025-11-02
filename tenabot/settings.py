@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'users',
-    'bot'
+    'bot',
+    'analytics'
 ]
 
 MIDDLEWARE = [
@@ -180,3 +181,6 @@ REST_FRAMEWORK = {
 }
 
 TELEGRAM_BOT_TOKEN="8396582526:AAFk6qgvwI858nv1LLTOmUEoGt_JAwDhonw"
+
+
+GEMINI_API_TOKEN=os.getenv("GEMINI_API_TOKEN")

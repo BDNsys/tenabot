@@ -7,6 +7,7 @@ urlpatterns = [
     path('',views.home,name='home'),
     path('upload-resume/', views.ResumeUploadView.as_view(), name='upload-resume'),
     path('resume-list/', views.ResumeListView.as_view(), name='resume-list'),
+    path('resume-info-list/', views.ResumeInfoListView.as_view(), name='resume-info-list'),
     
  
 ]
