@@ -8,20 +8,19 @@ from django.conf import settings
 import django
 import sys
 
-from . import views
-
 from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
 
 # Ensure Django is initialized
-sys.path.append('/path/to/your/project')  # e.g. "/home/nazri/tenabot"
+# Note: '/path/to/your/project' should be configured correctly for your setup.
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tenabot.settings')
 django.setup()
 
 load_dotenv()
-BOT_TOKEN =settings.TELEGRAM_BOT_TOKEN
+BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
 
 
 @sync_to_async
@@ -35,7 +34,6 @@ def register_telegram_user(telegram_user):
         },
     )
     return user, created
-
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -57,10 +55,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
-    
-    
-    # ✅ Web App button (your mini app)
-
    
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(message, reply_markup=reply_markup)

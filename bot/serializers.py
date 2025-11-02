@@ -34,3 +34,22 @@ class ResumeListSerializer(serializers.Serializer):
     file_path = serializers.CharField(max_length=255)
     created_at = serializers.DateTimeField()
     processed = serializers.BooleanField()
+    
+    
+class ResumeInfoSerializer(serializers.Serializer):
+    """
+    Serializer for ResumeInfo data.
+    Maps SQLAlchemy ResumeInfo fields to JSON output.
+    """
+    id = serializers.IntegerField()
+    resume_id = serializers.IntegerField()
+    phone = serializers.CharField(max_length=50, allow_null=True, required=False)
+    email = serializers.CharField(max_length=150, allow_null=True, required=False)
+    linkedin = serializers.CharField(max_length=255, allow_null=True, required=False)
+    position = serializers.CharField(max_length=150, allow_null=True, required=False)
+    education_level = serializers.CharField(max_length=100, allow_null=True, required=False)
+    work_history = serializers.JSONField(allow_null=True, required=False)
+    skills = serializers.JSONField(allow_null=True, required=False)
+    core_values = serializers.JSONField(allow_null=True, required=False)
+    structured_json = serializers.JSONField(allow_null=True, required=False)
+    created_at = serializers.DateTimeField()

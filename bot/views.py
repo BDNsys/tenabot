@@ -9,15 +9,18 @@ from rest_framework import status, permissions
 from rest_framework.authentication import SessionAuthentication # Use SessionAuth
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+import threading # Added for background processing
 
 # Import Serializer
-from .serializers import ResumeUploadSerializer ,ResumeListSerializer
+from .serializers import ResumeUploadSerializer ,ResumeListSerializer,ResumeInfoSerializer
 
 # Import SQLAlchemy components
 from tenabot.db import get_db
 from .models import Resume, ResumeInfo, UsageTracker, User as SQLAlchemyUser # Alias User to avoid conflict
 from sqlalchemy.orm.exc import NoResultFound
 
+# Import the new analytics service
+from analytics.services import process_and_save_resume_info 
 
 
 # Create your views here.
@@ -80,6 +83,8 @@ class ResumeUploadView(APIView):
         db_generator = get_db()
         db = next(db_generator) # Get the session object
         
+        new_resume_id = None # Initialize to capture ID
+        
         try:
             # 3a. Find the SQLAlchemy User ID
             # Assuming your Django User's 'telegram_id' maps to the SQLAlchemy User's 'telegram_id'
@@ -101,6 +106,7 @@ class ResumeUploadView(APIView):
             )
             db.add(new_resume)
             db.flush() # Flush to get the new_resume.id
+            new_resume_id = new_resume.id # Capture the ID
 
             # 3c. Create Initial ResumeInfo Record (Optional but good practice)
             new_resume_info = ResumeInfo(
@@ -130,9 +136,17 @@ class ResumeUploadView(APIView):
             
             # Commit all changes to the database
             db.commit()
+            
+            # 4. Trigger the Resume Analysis in a separate thread
+            # This makes the API response fast while processing runs in the background.
+            threading.Thread(
+                target=process_and_save_resume_info,
+                args=(new_resume_id, db_file_path)
+            ).start()
+
 
             return Response({
-                "message": "Resume uploaded and records created successfully.",
+                "message": "Resume uploaded and records created successfully. Analysis started in background.",
                 "resume_id": new_resume.id,
                 "file_path": db_file_path,
                 "uploads_today": usage.count
@@ -147,7 +161,7 @@ class ResumeUploadView(APIView):
             return Response({"detail": f"Database transaction failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         finally:
-            # 4. Close the SQLAlchemy session
+            # 5. Close the SQLAlchemy session
             db_generator.close()
             
             
@@ -207,3 +221,58 @@ class ResumeListView(APIView):
             # 4. Close the SQLAlchemy session
             db_generator.close()
             
+
+class ResumeInfoListView(APIView):
+    """
+    Returns a public, paginated list of all uploaded resumes.
+    Uses SQLAlchemy for data access and custom logic for pagination.
+    """
+    # The user requested that this view is not protected by auth.
+    permission_classes = [permissions.AllowAny] 
+
+    def get(self, request, *args, **kwargs):
+        db_generator = get_db()
+        db = next(db_generator)
+        
+        try:
+            # 1. Pagination Parameters
+            # Default to page 1, size 10. Max size is capped at 50 for safety.
+            page = int(request.query_params.get('page', 1))
+            page_size = int(request.query_params.get('page_size', 10))
+            page_size = min(page_size, 50) # Safety limit
+            offset = (page - 1) * page_size
+            
+            # 2. Get total count for pagination headers
+            # Note: count() executes a separate query optimized for counting.
+            total_count = db.query(Resume).count()
+            
+            # 3. Fetch paginated data using SQLAlchemy's limit and offset
+            resumes = db.query(ResumeInfo).order_by(
+                ResumeInfo.created_at.desc()
+            ).limit(page_size).offset(offset).all()
+
+            # 4. Serialize data
+            serializer = ResumeInfoSerializer(resumes, many=True)
+            
+            # 5. Return paginated response
+            response_data = {
+                "count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "results": serializer.data,
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        except ValueError:
+            # Handles non-integer values for page or page_size
+            return Response({"detail": "Invalid page or page_size parameter."}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print(f"Error fetching resumes: {e}")
+            return Response({"detail": "A server error occurred while fetching resumes."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        finally:
+            # 4. Close the SQLAlchemy session
+            db_generator.close()
+
