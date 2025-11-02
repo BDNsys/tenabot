@@ -30,7 +30,7 @@ def analyze_resume_with_gemini(resume_text: str) -> dict:
     """
     try:
         # Load API Key and initialize client
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = settings.GEMINI_API_TOKEN
         if not api_key:
             raise ValueError("GEMINI_API_KEY not found in environment variables.")
             
