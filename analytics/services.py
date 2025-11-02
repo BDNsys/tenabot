@@ -89,6 +89,8 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         # 2. Analyze with Gemini
         analysis_data = analyze_resume_with_gemini(resume_text)
         
+        print("✅ Gemini raw response:", analysis_data)
+        
         # 3. Find Resume and ResumeInfo records
         # Use a join to efficiently get the user's telegram_id
         resume = db.query(Resume).filter(Resume.id == resume_id).one()
