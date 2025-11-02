@@ -8,8 +8,12 @@ from bot.models import Resume,ResumeInfo
 from tenabot.pdf_service import generate_harvard_pdf
 from tenabot.notification import send_pdf_to_telegram
 import logging
+import json
 # Assuming you put the schema here or import it
 from .models import ResumeAnalysisSchema, FinalResumeOutput # Import the Pydantic schema
+
+# Set up logging for the background thread
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def extract_text_from_pdf(file_path: str) -> str:
     """Uses PyMuPDF to reliably extract text from a local PDF file."""
@@ -21,7 +25,7 @@ def extract_text_from_pdf(file_path: str) -> str:
                 text += page.get_text()
         return text
     except Exception as e:
-        logging(f"Error reading PDF file {full_path}: {e}")
+        logging.error(f"Error reading PDF file {full_path}: {e}") # FIX 2: Use logging.error
         raise
 
 def analyze_resume_with_gemini(resume_text: str) -> dict:
@@ -32,44 +36,45 @@ def analyze_resume_with_gemini(resume_text: str) -> dict:
         # Load API Key and initialize client
         api_key = settings.GEMINI_API_TOKEN
         if not api_key:
-            raise ValueError("GEMINI_API_KEY not found in environment variables.")
+            raise ValueError("GEMINI_API_KEY not found in settings.")
             
         client = genai.Client(api_key=api_key)
         
-        # 1. Define the System Instruction
+        # 1. Define the Instruction/Prompt Combination (FIX 1: Combining system instruction and prompt)
         system_instruction = (
             "You are a world-class Resume Parsing AI. Your task is to extract all relevant "
             "information from the provided resume text and return it strictly in the requested JSON format. "
             "Do not output any introductory or explanatory text. Just output the JSON object."
         )
 
-        # 2. Define the User Prompt
         user_prompt = f"Analyze the following resume text and extract the information into the required JSON schema. Prioritize accuracy and completeness.\n\nRESUME TEXT:\n---\n{resume_text}"
+        
+        # Combine the system instruction and user prompt to avoid the 'system_instruction' keyword TypeError
+        full_contents = system_instruction + "\n\n" + user_prompt
 
-        # 3. Configure the model request for structured output
+        # 2. Configure the model request for structured output
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=FinalResumeOutput, # Use the Pydantic model for schema definition
         )
 
-        # 4. Make the API Call
+        # 3. Make the API Call (FIX 1: Removed 'system_instruction' keyword to resolve TypeError)
+        # The instruction is now embedded at the start of the content string.
         response = client.models.generate_content(
             model='gemini-2.5-pro', # Use a high-quality model for complex extraction
-            contents=[user_prompt],
+            contents=[full_contents],
             config=config,
-            system_instruction=system_instruction
         )
         
-        # 5. Parse the JSON string result
-        import json
+        # 4. Parse the JSON string result
         json_string = response.text.strip()
         data = json.loads(json_string)
         
         # The result will be nested under 'resume_data' due to the FinalResumeOutput wrapper
-        return data['resume_data']
+        return data.get('resume_data', data)
 
     except Exception as e:
-        logging(f"Gemini API or processing failed: {e}")
+        logging.error(f"Gemini API or processing failed: {e}") # FIX 2: Use logging.error
         raise
 
 # --- Main Orchestration Function ---
@@ -89,7 +94,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         # 2. Analyze with Gemini
         analysis_data = analyze_resume_with_gemini(resume_text)
         
-        logging("✅ Gemini raw response:", analysis_data)
+        logging.info(f"✅ Gemini raw data received for ID {resume_id}.") # FIX 2: Use logging.info
         
         # 3. Find Resume and ResumeInfo records
         # Use a join to efficiently get the user's telegram_id
@@ -121,7 +126,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         resume.processed = True
 
         db.commit()
-        logging(f"Successfully processed and saved ResumeInfo for ID: {resume_id}. Data committed.")
+        logging.info(f"Successfully processed and saved ResumeInfo for ID: {resume_id}. Data committed.") # FIX 2: Use logging.info
 
         
         # 5. Generate Harvard-Style PDF
@@ -131,16 +136,16 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         if pdf_path:
             send_pdf_to_telegram(telegram_id, pdf_path, job_title)
         else:
-            logging(f"Skipping Telegram notification: PDF generation failed for {resume_id}.")
+            logging.warning(f"Skipping Telegram notification: PDF generation failed for {resume_id}.") # FIX 2: Use logging.warning
 
     except Exception as e:
         db.rollback()
-        logging(f"Failed to process and save resume info for ID {resume_id}: {e}")
+        logging.error(f"Failed to process and save resume info for ID {resume_id}: {e}") # FIX 2: Use logging.error
         
         # Optional: Send a failure notification if processing failed after file upload
         if telegram_id:
             try:
-                import telegram # Import telegram here to prevent conflicts with the main bot process
+                import telegram
                 bot = telegram.Bot(token=settings.TELEGRAM_BOT_TOKEN)
                 bot.send_message(
                     chat_id=telegram_id,
@@ -148,7 +153,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
                     parse_mode='Markdown'
                 )
             except Exception as bot_e:
-                logging(f"Failed to send error notification to Telegram: {bot_e}")
+                logging.error(f"Failed to send error notification to Telegram: {bot_e}") # FIX 2: Use logging.error
 
     finally:
         db_generator.close()
