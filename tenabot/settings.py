@@ -212,7 +212,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": os.path.join(LOG_DIR, "tena.log"),
+            "filename": "",
             "formatter": "verbose",
             'encoding': 'utf-8',
         },
