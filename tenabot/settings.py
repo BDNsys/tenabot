@@ -203,7 +203,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "/bdnsys.com/nazri_bdn/tena/logs/tena.log",  # change this path if needed
+            "filename": f"{BASE_DIR}/logs/tena.log",  # change this path if needed
             "formatter": "verbose",
         },
     },
