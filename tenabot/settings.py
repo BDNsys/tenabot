@@ -183,4 +183,44 @@ REST_FRAMEWORK = {
 TELEGRAM_BOT_TOKEN="8396582526:AAFk6qgvwI858nv1LLTOmUEoGt_JAwDhonw"
 
 
+
 GEMINI_API_TOKEN=os.getenv("GEMINI_API_TOKEN")
+
+#logging
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "/bdnsys.com/logs/tenabot.log",  # change this path if needed
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "tenabot": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+        "bot": {
+            "handlers": ["console", "file"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}
