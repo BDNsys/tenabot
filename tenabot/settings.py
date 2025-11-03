@@ -212,7 +212,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "",
+            "filename": "/home/bdnsysif/bdnsys.com/nazri_bdn/tena/logs/",
             "formatter": "verbose",
             'encoding': 'utf-8',
         },
