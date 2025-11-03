@@ -1,10 +1,8 @@
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 
 
-  
-# Pydantic models to define the exact structure we expect from Gemini
+# --- Auxiliary Schemas ---
 
 class WorkExperience(BaseModel):
     """Schema for a single job entry."""
@@ -13,6 +11,10 @@ class WorkExperience(BaseModel):
     start_date: str = Field(description="Start date, e.g., '01/2020'.")
     end_date: str = Field(description="End date, or 'Present'.")
     summary: str = Field(description="2-3 key accomplishments/responsibilities.")
+    
+    # Configuration to prevent additionalProperties from being generated for this nested object
+    model_config = ConfigDict(extra='forbid')
+
 
 class Education(BaseModel):
     """Schema for an education entry."""
@@ -20,9 +22,19 @@ class Education(BaseModel):
     degree: str
     field_of_study: str
     graduation_date: str
+    
+    # Configuration to prevent additionalProperties from being generated for this nested object
+    model_config = ConfigDict(extra='forbid')
+
+# --- Core Analysis Schema ---
 
 class ResumeAnalysisSchema(BaseModel):
-    """The main schema matching the fields we want to populate in ResumeInfo."""
+    """
+    The main schema matching the fields we want to populate in ResumeInfo.
+    
+    NOTE: The 'structured_json' field was removed to eliminate Dict[str, Any].
+    The data returned by Gemini will *be* the structured JSON dictionary.
+    """
     
     # Simple Fields
     phone: Optional[str] = Field(None, max_length=50)
@@ -39,9 +51,18 @@ class ResumeAnalysisSchema(BaseModel):
     # Nested field for structured data (maps to structured_json)
     full_education: List[Education] = Field(description="All formal education entries.")
     
-    # The overall JSON that will be stored in 'structured_json'
-    structured_json: Dict[str, Any] = Field(description="The full dictionary of all extracted data for structured storage.")
+    # Configuration to prevent additionalProperties from being generated
+    model_config = ConfigDict(extra='forbid')
 
-# The final model that includes the necessary nested structure for the API call
+
+# --- Final Output Model ---
+
 class FinalResumeOutput(BaseModel):
-    resume_data: ResumeAnalysisSchema
+    """
+    The final model expected by the Python SDK when structured JSON is wrapped.
+    This model MUST use 'extra='forbid'' to ensure a clean schema.
+    """
+    resume_data: ResumeAnalysisSchema = Field(description="The root object containing all parsed resume data.")
+    
+    # CRITICAL FIX: Ensures the generated schema does not contain 'additionalProperties'.
+    model_config = ConfigDict(extra='forbid')
