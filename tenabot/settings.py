@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 import os
 
 
+
+
 load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -26,6 +28,8 @@ DB_PASSWORD=os.getenv("DB_PASSWORD")
 DB_PORT=os.getenv("DB_PORT")
 
 
+
+
 # user model
 
 AUTH_USER_MODEL = 'users.User'
@@ -33,6 +37,10 @@ AUTH_USER_MODEL = 'users.User'
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE_DIR =os.path.join(BASE_DIR,'templates')
+
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
 
 
 
@@ -203,7 +211,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": f"{BASE_DIR}/logs/tena.log",  # change this path if needed
+            "filename": os.path.join(LOG_DIR, "tena.log"),
             "formatter": "verbose",
         },
     },
