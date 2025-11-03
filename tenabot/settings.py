@@ -208,11 +208,13 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            'encoding': 'utf-8',
         },
         "file": {
             "class": "logging.FileHandler",
             "filename": os.path.join(LOG_DIR, "tena.log"),
             "formatter": "verbose",
+            'encoding': 'utf-8',
         },
     },
     "root": {
