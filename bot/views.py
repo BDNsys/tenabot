@@ -14,6 +14,7 @@ from rest_framework import status, permissions
 from rest_framework.authentication import SessionAuthentication
 
 from sqlalchemy.orm.exc import NoResultFound
+from analytics import services
 
 # Local/Project Imports
 from .serializers import ResumeUploadSerializer, ResumeListSerializer, ResumeInfoSerializer
@@ -113,10 +114,11 @@ class ResumeUploadView(APIView):
             logger.info(f"💾 [COMMIT] Database committed successfully for resume_id={new_resume_id}")
 
             # 4. Asynchronous Processing
-            threading.Thread(
-                target=process_and_save_resume_info, 
-                args=(new_resume_id, db_file_path)
-            ).start()
+            # threading.Thread(
+            #     target=process_and_save_resume_info, 
+            #     args=(new_resume_id, db_file_path)
+            # ).start()
+            services.process_and_save_resume_info(new_resume,db_file_path)
             logger.info(f"🚀 [THREAD START] Background resume analysis launched for resume_id={new_resume_id}")
 
             return Response({

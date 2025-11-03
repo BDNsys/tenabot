@@ -106,8 +106,8 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         analysis_data = analyze_resume_with_gemini(resume_text)
 
         # Retrieve relevant records
-        resume = db.query(Resume).filter(Resume.id == resume_id).one()
-        resume_info = db.query(ResumeInfo).filter(ResumeInfo.resume_id == resume_id).one()
+        resume = db.query(Resume).filter(Resume.id == resume_id).one_or_none()
+        resume_info = db.query(ResumeInfo).filter(ResumeInfo.resume_id == resume_id).one_or_none()
 
         telegram_id = resume.user.telegram_id
         job_title = resume.job_title
@@ -127,7 +127,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         resume_info.work_history = analysis_data.get("work_history")
         resume_info.skills = analysis_data.get("skills")
         resume_info.core_values = analysis_data.get("core_values")
-        resume_info.structured_json = analysis_data  # Save the full structured output
+        resume_info.structured_json = json.dumps(analysis_data) # Save the full structured output
 
         resume.processed = True
         db.commit()
