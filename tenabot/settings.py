@@ -211,7 +211,7 @@ LOGGING = {
         },
         "file": {
             "class": "logging.FileHandler",
-            "filename": "/home/bdnsysif/bdnsys.com/nazri_bdn/tena/logs/tena.log",
+            "filename": os.path.join(LOG_DIR, "tena.log"),
             "formatter": "verbose",
         },
     },
