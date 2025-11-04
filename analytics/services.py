@@ -114,9 +114,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         job_title = resume.job_title
 
         # 3. Update Database Records
-        db_gen.close() 
-        db_gen = get_db()
-        db = next(db_gen) # Get a fresh session object
+        # Get a fresh session object
 
 
         logger.info(f"🗂 [STEP 3] Updating database records...")
