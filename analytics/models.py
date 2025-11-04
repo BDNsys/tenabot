@@ -12,9 +12,10 @@ class WorkExperience(BaseModel):
     end_date: str = Field(description="End date, or 'Present'.")
     summary: str = Field(description="2-3 key accomplishments/responsibilities.")
     
-    # Configuration to prevent additionalProperties from being generated for this nested object
-    model_config = ConfigDict(extra='forbid')
-
+    model_config = ConfigDict(
+        # The key setting to remove 'additionalProperties' from the schema
+        json_schema_extra={"additionalProperties": False}
+    )
 
 class Education(BaseModel):
     """Schema for an education entry."""
@@ -23,9 +24,10 @@ class Education(BaseModel):
     field_of_study: str
     graduation_date: str
     
-    # Configuration to prevent additionalProperties from being generated for this nested object
-    model_config = ConfigDict(extra='forbid')
-
+    model_config = ConfigDict(
+        # The key setting to remove 'additionalProperties' from the schema
+        json_schema_extra={"additionalProperties": False}
+    )
 # --- Core Analysis Schema ---
 
 class ResumeAnalysisSchema(BaseModel):
@@ -52,7 +54,10 @@ class ResumeAnalysisSchema(BaseModel):
     full_education: List[Education] = Field(description="All formal education entries.")
     
     # Configuration to prevent additionalProperties from being generated
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        # The key setting to remove 'additionalProperties' from the schema
+        json_schema_extra={"additionalProperties": False}
+    )
 
 
 # --- Final Output Model ---
@@ -65,4 +70,7 @@ class FinalResumeOutput(BaseModel):
     resume_data: ResumeAnalysisSchema = Field(description="The root object containing all parsed resume data.")
     
     # CRITICAL FIX: Ensures the generated schema does not contain 'additionalProperties'.
-    model_config = ConfigDict(extra='forbid')
+    model_config = ConfigDict(
+        # The key setting to remove 'additionalProperties' from the schema
+        json_schema_extra={"additionalProperties": False}
+    )
