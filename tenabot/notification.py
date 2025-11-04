@@ -1,111 +1,97 @@
-# tenabot/tenabot/notification.py
-
 import asyncio
 import os
 import time
 from telegram import Bot, InputFile
 from django.conf import settings
 import logging
-logger = logging.getLogger(__name__) 
 
-# --- Setup ---
-# NOTE: The logger name setup (logger = logging.getLogger(name)) 
-# needs to be defined outside this structure for the code to run correctly.
-# Assuming 'logger' is defined and configured elsewhere.
+# Ensure 'name' is defined or use a specific module name
+# For this example, assuming 'name' is intended to be the module name.
+logger = logging.getLogger(__name__)
 
-# --- Async Core Function ---
+
 async def _send_pdf(bot_token: str, telegram_id: int, pdf_path: str, filename: str, caption: str):
-    """
-    Async function to send a PDF via Telegram's sendDocument API.
+    """Async function to send a PDF via Telegram."""
+    bot = Bot(token=bot_token)
     
-    Args:
-        bot_token (str): The Telegram Bot API token.
-        telegram_id (int): The chat ID to send the document to.
-        pdf_path (str): The local path to the PDF file.
-        filename (str): The desired filename for the document in Telegram.
-        caption (str): The message caption (supports Markdown).
-    """
-    try:
-        # Initialize the bot object
-        bot = Bot(token=bot_token)
-        file_stats = os.stat(pdf_path)
-        logger.info(f"📊 File details - Size: {file_stats.st_size} bytes, Modified: {time.ctime(file_stats.st_mtime)}")
-        # Read and log first few bytes to verify content
-        with open(pdf_path, 'rb') as f:
-            first_bytes = f.read(20)
-            logger.info(f"🔍 PDF header: {first_bytes}")
-        
-        async with bot:
-            logger.info(f"Uploading file: {filename} to chat {telegram_id}")
-            result=await bot.send_document(
-                chat_id=telegram_id,
-                # InputFile prepares the file for upload
-                document=InputFile(pdf_path, filename=filename),
-                caption=caption,
-                parse_mode="Markdown"
-            )
-            # Log successful send details
-            if hasattr(result, 'document'):
-                logger.info(f"✅ File sent successfully. Telegram file ID: {result.document.file_id}")
-            else:
-                logger.info("✅ Message sent but document details not available")
-            
-            
-    except Exception as e:
-        # Re-raising the exception to be caught by the calling function
-        raise Exception(f"Telegram upload failed: {e}")
+    file_stats = os.stat(pdf_path)
+    logger.info(
+        "📊 File details - Size: %d bytes, Modified: %s", 
+        file_stats.st_size, 
+        time.ctime(file_stats.st_mtime)
+    )
 
-# --- Synchronous Wrapper ---
+    # Read first few bytes to confirm validity
+    try:
+        with open(pdf_path, "rb") as f:
+            header = f.read(10)
+            logger.info("🔍 PDF header preview: %s", header)
+    except FileNotFoundError:
+        logger.error("❌ PDF file not found at path: %s", pdf_path)
+        return
+
+    async with bot:
+        # Re-open the file for sending within the async context
+        try:
+            with open(pdf_path, "rb") as f:  # ✅ Send as file object
+                logger.info("📤 Uploading '%s' to chat %d...", filename, telegram_id)
+                result = await bot.send_document(
+                    chat_id=telegram_id,
+                    document=InputFile(f, filename=filename),
+                    caption=caption,
+                    parse_mode="Markdown"
+                )
+                if hasattr(result, "document"):
+                    logger.info("✅ File sent successfully. Telegram file ID: %s", result.document.file_id)
+                else:
+                    logger.warning("⚠️ Message sent, but document details missing")
+        except Exception as e:
+            logger.error("❌ File reading error during upload: %s", e, exc_info=True)
+
+
 def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
-    """
-    Synchronous wrapper around the async Telegram PDF sender.
-    Handles token/path checks, logging, and managing the asyncio loop.
-    
-    Args:
-        telegram_id (int): The chat ID.
-        pdf_path (str): The local path to the PDF file.
-        job_title (str): The job title used for filename and caption generation.
-    """
-    # 1. Configuration and Validation
-    bot_token = settings.TELEGRAM_BOT_TOKEN
+    """Sync wrapper to send PDF to Telegram."""
+    try:
+        # Load bot token from Django settings
+        bot_token = settings.TELEGRAM_BOT_TOKEN
+    except AttributeError:
+        logger.error("❌ TELEGRAM_BOT_TOKEN missing in settings.")
+        return
+
     if not bot_token:
-        logger.error("ERROR: BOT_TOKEN not configured in Django settings.")
+        logger.error("❌ BOT_TOKEN value is empty.")
         return
 
     if not os.path.exists(pdf_path):
-        logger.error(f"PDF not found at {pdf_path}")
+        logger.error("❌ PDF not found: %s", pdf_path)
         return
 
-    # 2. File Metadata and Caption
-    file_size_bytes = os.path.getsize(pdf_path)
-    logger.info(f"PDF exists: {pdf_path} (size: {file_size_bytes} bytes)")
-    clean_job_title = "".join(c for c in job_title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-    clean_job_title = clean_job_title.replace(' ', '_') 
+    file_size = os.path.getsize(pdf_path)
+    logger.info("PDF ready: %s (%d bytes)", pdf_path, file_size)
 
-    filename = f"Harvard_Resume_{clean_job_title}.pdf"
-    caption = (
-        f"✅ Resume Analysis Complete!\n\n"
-        f"Here is your **Harvard-Style PDF Resume** for *{clean_job_title}*."
-    )
+    # Clean the job title for use in the filename
+    clean_job_title = "".join(
+        c for c in job_title if c.isalnum() or c in (" ", "-", "_")
+    ).strip().replace(" ", "_")
     
-    # 3. Execution (Time delay and Async Handling)
-    try:
-        logger.info("Pausing 2 seconds before sending PDF...")
-        time.sleep(2) # Delay for system stability/user experience
-        
-        # Prepare the async task
-        send_task = _send_pdf(bot_token, telegram_id, pdf_path, filename, caption)
+    filename = f"Harvard_Resume_{clean_job_title}.pdf"
+    caption = f"✅ Resume Analysis Complete!\n\nHere is your **Harvard-Style PDF Resume** for *{clean_job_title}*."
 
+    try:
+        logger.info("⏳ Waiting 2s before sending...")
+        time.sleep(2)
+
+        send_task = _send_pdf(bot_token, telegram_id, pdf_path, filename, caption)
         loop = asyncio.get_event_loop()
         
+        # Check if an event loop is already running (e.g., in an async context)
         if loop.is_running():
-            # If already inside an event loop (e.g., in an async Django view/consumer)
             asyncio.ensure_future(send_task)
-            logger.info(f"✅ PDF scheduled to send to Telegram user {telegram_id}")
+            logger.info("📨 PDF scheduled to send to chat %d", telegram_id)
         else:
-            # If called from a synchronous context (e.g., a standard Django view/signal)
+            # Run the async task synchronously
             loop.run_until_complete(send_task)
-            logger.info(f"✅ PDF successfully sent to Telegram user {telegram_id}")
-
+            logger.info("✅ PDF successfully sent to chat %d", telegram_id)
+            
     except Exception as e:
-        logger.error(f"❌ Error sending PDF to Telegram: {e}", exc_info=True)
+        logger.error("❌ Telegram send failed: %s", e, exc_info=True)
