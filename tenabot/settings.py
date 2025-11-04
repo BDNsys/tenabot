@@ -213,6 +213,7 @@ LOGGING = {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "encoding":"utf-8",
             
         },
         "file": {
