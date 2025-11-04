@@ -95,7 +95,7 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         story.append(Spacer(1, 0.25 * inch))
 
         # --- Core Values ---
-        core_values = resume_data.get("core_values", [])
+        core_values =clean_list_data(resume_data.get("core_values", []))
         if core_values:
             story.append(Paragraph("Core Values", styles["SectionTitle"]))
             # ✅ Cast List Item to string
@@ -109,7 +109,7 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
             story.append(Spacer(1, 0.25 * inch))
 
         # --- Skills ---
-        skills = resume_data.get("skills", [])
+        skills = clean_list_data(resume_data.get("skills", []))
         if skills:
             story.append(Paragraph("Skills", styles["SectionTitle"]))
             # ✅ Cast List Item to string
@@ -171,3 +171,22 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
     except Exception as e:
         logger.error(f"💥 [PDF] Failed to generate Harvard PDF for {telegram_id}: {e}", exc_info=True)
         return None
+    
+
+
+def clean_list_data(data_list: list) -> list:
+    """
+    Ensures all items in a list are non-empty strings, handling floats/None safely.
+    """
+    cleaned_list = []
+    if not isinstance(data_list, list):
+        return []
+        
+    for item in data_list:
+        # Cast item to string
+        item_str = str(item)
+        
+        # Check if the resulting string is empty or just whitespace
+        if item_str.strip() and item_str.lower() != 'none':
+            cleaned_list.append(item_str)
+    return cleaned_list
