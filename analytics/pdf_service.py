@@ -1,4 +1,5 @@
 import os
+import time
 from django.conf import settings
 from typing import Dict, Any, List
 
@@ -45,7 +46,7 @@ def generate_harvard_pdf(resume_data: Dict[str, Any], telegram_id: int) -> str:
     os.makedirs(output_dir, exist_ok=True)
     
     # Use the telegram_id and current timestamp for a unique file name
-    filename_base = f"resume_{telegram_id}_{int(os.time())}"
+    filename_base = f"resume_{telegram_id}_{int(time.time())}"
     tex_path = os.path.join(output_dir, f"{filename_base}.tex")
     pdf_path = os.path.join(output_dir, f"{filename_base}.pdf")
     

@@ -12,8 +12,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from dotenv import load_dotenv
-
+import sys
 import os
+import logging
+
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+logging.basicConfig(encoding='utf-8')
 
 
 
