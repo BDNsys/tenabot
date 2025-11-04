@@ -115,7 +115,7 @@ class ResumeUploadView(APIView):
 
             # 4. Asynchronous Processing
             threading.Thread(
-                target=process_and_save_resume_info, 
+                target=services.process_and_save_resume_info, 
                 args=(new_resume_id, db_file_path)
             ).start()
             # services.process_and_save_resume_info(new_resume_id,db_file_path)
