@@ -29,7 +29,7 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
         )
        
         async with bot:
-            logger.info(f"✅ sending file{pdf_path} filename {f"Harvard_Resume_{job_title}.pdf"}")
+            logger.info(f"✅ sending file{pdf_path} filename Harvard_Resume_{job_title}.pdf")
             
             await bot.send_document(
                 chat_id=telegram_id,
