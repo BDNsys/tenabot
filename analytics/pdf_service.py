@@ -97,15 +97,13 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
                 fontName="Helvetica"
             )
         )
+        # ✅ Rename here:
         styles.add(
             ParagraphStyle(
-                name="Italic", 
-                fontSize=9, 
-                leading=12, 
-                textColor=colors.HexColor("#555555"), 
-                fontName="Helvetica-Oblique"
-            )
-        )
+                name="ItalicSmall", 
+                fontSize=9,
+                leading=12,                           
+                textColor=colors.HexColor("#555555"), fontName="Helvetica-Oblique"))
 
         story = []
 
