@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import date
-import threading
+
 
 from django.conf import settings
 from django.shortcuts import render

@@ -8,7 +8,7 @@ from bot.models import Resume, ResumeInfo
 from .pdf_service import generate_harvard_pdf
 from tenabot.notification import send_pdf_to_telegram
 import json
-
+import threading
 from .models import ResumeAnalysisSchema, FinalResumeOutput
 
 import logging
@@ -143,7 +143,11 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         #     logger.info(f"📨 [STEP 6] PDF sent to Telegram user {telegram_id}")
         pdf_path = generate_harvard_pdf(analysis_data, telegram_id)
         if pdf_path:
-            send_pdf_to_telegram(telegram_id, pdf_path, job_title)
+            threading.Thread(
+                target=send_pdf_to_telegram, 
+                args=(telegram_id, pdf_path, job_title)
+            ).start()
+            
         else:
             logger.error("⚠️ PDF generation failed for resume ")
        
