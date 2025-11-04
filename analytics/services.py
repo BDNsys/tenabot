@@ -61,11 +61,12 @@ def analyze_resume_with_gemini(resume_text: str) -> dict:
             "Return structured JSON based on the resume text."
         )
         full_contents = f"{system_instruction}\n\n---\n{resume_text}"
+        clean_schema = strip_additional_props(FinalResumeOutput.model_json_schema())
 
         # Configuration for structured JSON output
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
-            response_schema=FinalResumeOutput,  # Uses the defined schema
+            response_schema=clean_schema,  # Uses the defined schema
         )
 
         logger.info("🔍 Sending content to Gemini model...")
@@ -161,3 +162,16 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
     finally:
         db_gen.close()
         logger.info("🔚 [END] Database connection closed.")
+        
+        
+        
+def strip_additional_props(schema: dict) -> dict:
+    if isinstance(schema, dict):
+        return {
+            k: strip_additional_props(v)
+            for k, v in schema.items()
+            if k != "additionalProperties"
+        }
+    elif isinstance(schema, list):
+        return [strip_additional_props(i) for i in schema]
+    return schema
