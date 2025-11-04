@@ -1,9 +1,13 @@
+#tenabot/tenabot/notification.py
 import asyncio
 import time
 import telegram
 from telegram import InputFile
 from django.conf import settings
 import os
+import logging
+
+logger = logging.getLogger(__name__) 
 
 def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
     """Synchronous wrapper around async Telegram send_document."""
@@ -23,7 +27,10 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
             f"✅ Resume Analysis Complete!\n\n"
             f"Here is your **Harvard-Style PDF Resume** for *{job_title}*."
         )
+       
         async with bot:
+            logger.info(f"✅ sending file{pdf_path} filename {f"Harvard_Resume_{job_title}.pdf"}")
+            
             await bot.send_document(
                 chat_id=telegram_id,
                 document=InputFile(pdf_path, filename=f"Harvard_Resume_{job_title}.pdf"),
@@ -32,6 +39,10 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
             )
 
     try:
+        if not os.path.exists(pdf_path):
+            logger.error(f"PDF path does not exist: {pdf_path}")
+        else:
+            logger.info(f"PDF exists. Proceeding to send {pdf_path}")
         print("Pausing 2 seconds before sending PDF...")
         time.sleep(2)
         asyncio.run(_send())
