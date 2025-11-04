@@ -14,12 +14,16 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
     bot_token = settings.TELEGRAM_BOT_TOKEN
 
     if not bot_token:
-        print("ERROR: BOT_TOKEN not configured.")
+        logger.error("ERROR: BOT_TOKEN not configured.")
         return
 
     if not os.path.exists(pdf_path):
-        print(f"ERROR: PDF not found at {pdf_path}")
+        logger.error(f"PDF not found at {pdf_path}")
         return
+
+    # Log file size
+    file_size_bytes = os.path.getsize(pdf_path)
+    logger.info(f"PDF exists: {pdf_path} (size: {file_size_bytes} bytes)")
 
     async def _send():
         bot = telegram.Bot(token=bot_token)
@@ -29,8 +33,7 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
         )
        
         async with bot:
-            logger.info(f"✅ sending file{pdf_path} filename Harvard_Resume_{job_title}.pdf")
-            
+            logger.info(f"✅ Sending file: {pdf_path} as Harvard_Resume_{job_title}.pdf")
             await bot.send_document(
                 chat_id=telegram_id,
                 document=InputFile(pdf_path, filename=f"Harvard_Resume_{job_title}.pdf"),
@@ -39,13 +42,9 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
             )
 
     try:
-        if not os.path.exists(pdf_path):
-            logger.error(f"PDF path does not exist: {pdf_path}")
-        else:
-            logger.info(f"PDF exists. Proceeding to send {pdf_path}")
         print("Pausing 2 seconds before sending PDF...")
         time.sleep(2)
         asyncio.run(_send())
         print(f"✅ PDF successfully sent to Telegram user {telegram_id}")
     except Exception as e:
-        print(f"❌ Error sending PDF to Telegram: {e}")
+        logger.error(f"❌ Error sending PDF to Telegram: {e}", exc_info=True)
