@@ -5,7 +5,7 @@ from google.genai import types
 from django.conf import settings
 from tenabot.db import get_db
 from bot.models import Resume, ResumeInfo
-from tenabot.pdf_service import generate_harvard_pdf
+from .pdf_service import generate_harvard_pdf
 from tenabot.notification import send_pdf_to_telegram
 import json
 
@@ -134,12 +134,15 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         db.commit()
 
         # 4. Generate and Send PDF
-        logger.info(f"✅ [STEP 4] Resume {resume_id} processed successfully. Generating Harvard PDF...")
+        logger.info(f"🧾 [STEP 4] All data processed. Proceeding to generate Harvard PDF...")
+
+       
         pdf_path = generate_harvard_pdf(analysis_data, telegram_id)
 
         if pdf_path:
+            logger.info(f"✅ [STEP 5] Resume {resume_id} processed successfully. Generating Harvard PDF...")
             send_pdf_to_telegram(telegram_id, pdf_path, job_title)
-            logger.info(f"📨 [STEP 5] PDF sent to Telegram user {telegram_id}")
+            logger.info(f"📨 [STEP 6] PDF sent to Telegram user {telegram_id}")
         else:
             logger.warning(f"⚠️ PDF generation returned None for resume {resume_id}")
 
