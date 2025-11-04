@@ -141,13 +141,11 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         #     logger.info(f"✅ [STEP 5] Resume {resume_id} processed successfully. Generating Harvard PDF...")
         #     send_pdf_to_telegram(telegram_id, pdf_path, job_title)
         #     logger.info(f"📨 [STEP 6] PDF sent to Telegram user {telegram_id}")
-        pdf_path, log_path = generate_harvard_pdf(analysis_data, telegram_id)
+        pdf_path = generate_harvard_pdf(analysis_data, telegram_id)
         if pdf_path:
-            logger.info("📨 Sending PDF to Telegram user %s — %s", telegram_id, pdf_path)
             send_pdf_to_telegram(telegram_id, pdf_path, job_title)
-            logger.info("✅ PDF sent to user %s", telegram_id)
         else:
-            logger.error("⚠️ PDF generation failed for resume %s. See log: %s", resume_id, log_path)
+            logger.error("⚠️ PDF generation failed for resume ")
        
 
     except Exception as e:

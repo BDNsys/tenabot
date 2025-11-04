@@ -1,216 +1,55 @@
 # tenabot/analytics/pdf_generation_service.py
-import os
-import time
-import shutil
-import subprocess
-from typing import Dict, Any, List, Tuple, Optional
+import os, time
 from django.conf import settings
-import logging
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
+from reportlab.lib.units import inch
 
-logger = logging.getLogger(__name__)
-
-def format_latex_list(items: List[str]) -> str:
-    if not items:
-        return ""
-    latex_list = "\n".join([f"\\item {item}" for item in items])
-    return f"\\begin{{itemize}}[label=-]\n{latex_list}\n\\end{{itemize}}"
-
-def format_work_history(work_history: List[Dict[str, str]]) -> str:
-    entries = []
-    for entry in work_history:
-        years = f"{entry.get('start_date', '')}--{entry.get('end_date', '')}"
-        title = entry.get('title', 'N/A')
-        company = entry.get('company', 'N/A')
-        summary = entry.get('summary', 'No summary provided.')
-        description_list = (
-            "\\begin{itemize}[label={$\\bullet$}, itemsep=0pt]\n"
-            f"\\item {summary}\n"
-            "\\end{itemize}"
-        )
-        # keep six fields format consistent with moderncv expectations
-        entry_latex = f"\\cventry{{{years}}}{{{title}}}{{{company}}}{{}}{{{description_list}}}"
-        entries.append(entry_latex)
-    return "\n\n".join(entries)
-
-
-def _write_tex(tex_path: str, latex_content: str) -> None:
-    with open(tex_path, "w", encoding="utf-8") as f:
-        f.write(latex_content)
-
-
-def _run_pdflatex(tex_path: str, work_dir: str, timeout: int = 30) -> Tuple[int, str, str]:
-    """
-    Run pdflatex in `work_dir`. Returns (returncode, stdout, stderr).
-    """
-    # We run pdflatex twice to resolve cross-references if any
-    cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", os.path.basename(tex_path)]
-    combined_stdout = []
-    combined_stderr = []
-
-    for i in range(2):
-        proc = subprocess.run(
-            cmd,
-            cwd=work_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            timeout=timeout,
-        )
-        combined_stdout.append(proc.stdout.decode("utf-8", errors="replace"))
-        combined_stderr.append(proc.stderr.decode("utf-8", errors="replace"))
-        # If first run failed with non-zero code, break early
-        if proc.returncode != 0:
-            return proc.returncode, "\n".join(combined_stdout), "\n".join(combined_stderr)
-
-    return proc.returncode, "\n".join(combined_stdout), "\n".join(combined_stderr)
-
-
-def generate_harvard_pdf(resume_data: Dict[str, Any], telegram_id: int) -> Tuple[Optional[str], str]:
-    """
-    Generate a LaTeX file and compile it to PDF using pdflatex.
-
-    Returns:
-        (pdf_path_or_None, log_path)
-    The log_path always points to a text file with pdflatex stdout+stderr for debugging.
-    """
+def generate_harvard_pdf(resume_data, telegram_id):
     output_dir = os.path.join(settings.MEDIA_ROOT, "generated_resumes")
     os.makedirs(output_dir, exist_ok=True)
 
-    timestamp = int(time.time())
-    filename_base = f"resume_{telegram_id}_{timestamp}"
-    tex_path = os.path.join(output_dir, f"{filename_base}.tex")
-    pdf_path = os.path.join(output_dir, f"{filename_base}.pdf")
-    log_path = os.path.join(output_dir, f"{filename_base}.log.txt")
-    aux_dir = os.path.join(output_dir, f"{filename_base}_aux")
-    os.makedirs(aux_dir, exist_ok=True)
+    filename_base = f"resume_{telegram_id}_{int(time.time())}.pdf"
+    pdf_path = os.path.join(output_dir, filename_base)
 
-    # --- Build LaTeX content ---
-    contact_name = f"User {telegram_id}"
-    phone = resume_data.get("phone", "N/A")
-    email = resume_data.get("email", "N/A")
-    linkedin = resume_data.get("linkedin", "N/A")
-    work_history = resume_data.get("work_history", [])
+    doc = SimpleDocTemplate(pdf_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+
+    title = resume_data.get("position_inferred", "Professional Resume")
+    story.append(Paragraph(f"<b>{title}</b>", styles["Title"]))
+    story.append(Spacer(1, 0.2 * inch))
+
+    story.append(Paragraph(f"<b>Phone:</b> {resume_data.get('phone', 'N/A')}", styles["Normal"]))
+    story.append(Paragraph(f"<b>Email:</b> {resume_data.get('email', 'N/A')}", styles["Normal"]))
+    story.append(Paragraph(f"<b>LinkedIn:</b> {resume_data.get('linkedin', 'N/A')}", styles["Normal"]))
+    story.append(Spacer(1, 0.2 * inch))
+
+    story.append(Paragraph("<b>Core Values</b>", styles["Heading2"]))
+    values = resume_data.get("core_values", [])
+    story.append(ListFlowable([ListItem(Paragraph(v, styles["Normal"])) for v in values]))
+    story.append(Spacer(1, 0.2 * inch))
+
+    story.append(Paragraph("<b>Skills</b>", styles["Heading2"]))
     skills = resume_data.get("skills", [])
-    core_values = resume_data.get("core_values", [])
-    full_education = resume_data.get("full_education", [])
-    education_level = resume_data.get("education_level", "Education Summary")
+    story.append(ListFlowable([ListItem(Paragraph(s, styles["Normal"])) for s in skills]))
+    story.append(Spacer(1, 0.2 * inch))
 
-    work_history_latex = format_work_history(work_history)
-    skills_latex = format_latex_list(skills)
-    core_values_latex = format_latex_list(core_values)
+    story.append(Paragraph("<b>Work Experience</b>", styles["Heading2"]))
+    for job in resume_data.get("work_history", []):
+        story.append(Paragraph(f"<b>{job.get('title','')}</b> — {job.get('company','')}", styles["Normal"]))
+        story.append(Paragraph(f"{job.get('start_date','')} - {job.get('end_date','')}", styles["Italic"]))
+        story.append(Paragraph(job.get("summary",""), styles["Normal"]))
+        story.append(Spacer(1, 0.15 * inch))
 
-    latex_content = f"""
-\\documentclass[11pt, a4paper]{{moderncv}}
-\\moderncvstyle{{casual}}
-\\moderncvcolor{{blue}}
-\\usepackage[utf8]{{inputenc}}
-\\usepackage[T1]{{fontenc}}
-\\usepackage{{ragged2e}}
-\\usepackage[scale=0.8]{{geometry}}
+    story.append(Paragraph("<b>Education</b>", styles["Heading2"]))
+    for edu in resume_data.get("full_education", []):
+        story.append(Paragraph(
+            f"{edu.get('degree','')} in {edu.get('field_of_study','')} "
+            f"from {edu.get('institution','')} ({edu.get('graduation_date','')})",
+            styles["Normal"]
+        ))
 
-\\name{{{contact_name}}}{{}}
-\\title{{{resume_data.get('position_inferred', 'Professional Resume')}}}
-\\address{{}}{{}}{{}}
-\\mobile{{{phone}}}
-\\email{{{email}}}
-\\social[linkedin]{{https://linkedin.com/in/profile}}{{{linkedin}}}
-\\extrainfo{{}}
-
-\\begin{{document}}
-\\makecvtitle
-
-\\section{{Professional Summary}}
-\\begin{{itemize}}[label={{$\\star$}}]
-\\item This resume was generated by Tenabot using Gemini AI to extract and structure data.
-\\end{{itemize}}
-
-\\section{{Core Values}}
-{core_values_latex}
-
-\\section{{Experience}}
-{work_history_latex}
-
-\\section{{Education}}
-\\cvitem{{{education_level}}}{{%
-    \\begin{{itemize}}[itemsep=0pt]
-"""
-    for edu in full_education:
-        latex_content += (
-            f"        \\item \\textbf{{{edu.get('degree','')}}} in {edu.get('field_of_study','')} "
-            f"from {edu.get('institution','')} ({edu.get('graduation_date','')})\n"
-        )
-
-    latex_content += f"""
-    \\end{{itemize}}
-}}
-
-\\section{{Skills}}
-{skills_latex}
-
-\\end{{document}}
-"""
-
-    # Write .tex file
-    try:
-        _write_tex(tex_path, latex_content)
-    except Exception as e:
-        logger.exception("Failed to write .tex file: %s", e)
-        # write a minimal log for caller
-        with open(log_path, "w", encoding="utf-8") as lf:
-            lf.write(f"Failed to write .tex file: {e}\n")
-        return None, log_path
-
-    # Copy tex to aux_dir and run pdflatex there (keeps output files separate)
-    try:
-        # Copy the .tex into aux_dir to keep compilation artifacts isolated
-        aux_tex_path = os.path.join(aux_dir, os.path.basename(tex_path))
-        shutil.copy2(tex_path, aux_tex_path)
-
-        rc, stdout_txt, stderr_txt = _run_pdflatex(aux_tex_path, aux_dir, timeout=60)
-
-        # Save compilation log
-        with open(log_path, "w", encoding="utf-8") as lf:
-            lf.write("=== PDFLaTeX STDOUT ===\n")
-            lf.write(stdout_txt + "\n\n")
-            lf.write("=== PDFLaTeX STDERR ===\n")
-            lf.write(stderr_txt + "\n\n")
-            lf.write(f"=== RETURN CODE: {rc} ===\n")
-
-        if rc != 0:
-            logger.error("pdflatex failed (rc=%s). See log: %s", rc, log_path)
-            return None, log_path
-
-        # Move resulting PDF from aux_dir to output_dir
-        generated_pdf_name = os.path.splitext(os.path.basename(aux_tex_path))[0] + ".pdf"
-        generated_pdf_path = os.path.join(aux_dir, generated_pdf_name)
-        if not os.path.exists(generated_pdf_path):
-            logger.error("pdflatex returned success but PDF not found at expected path: %s", generated_pdf_path)
-            return None, log_path
-
-        shutil.move(generated_pdf_path, pdf_path)
-
-        # Optionally keep auxiliary files for debugging or remove them:
-        # shutil.rmtree(aux_dir)  # uncomment to remove aux files
-        logger.info("PDF generated: %s (log: %s)", pdf_path, log_path)
-        return pdf_path, log_path
-
-    except subprocess.TimeoutExpired as texp:
-        logger.exception("pdflatex timed out: %s", texp)
-        with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"\nTimeout: {texp}\n")
-        return None, log_path
-
-    except FileNotFoundError as fnf:
-        # pdflatex not installed
-        err_msg = (
-            "pdflatex not found. Ensure TeX Live / pdflatex is installed on the machine."
-        )
-        logger.exception(err_msg)
-        with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(err_msg + "\n")
-        return None, log_path
-
-    except Exception as e:
-        logger.exception("Unexpected error during PDF generation: %s", e)
-        with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"Unexpected error: {e}\n")
-        return None, log_path
+    doc.build(story)
+    return pdf_path
