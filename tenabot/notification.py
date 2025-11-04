@@ -1,4 +1,5 @@
 import asyncio
+import time
 import telegram
 from telegram import InputFile
 from django.conf import settings
@@ -31,6 +32,8 @@ def send_pdf_to_telegram(telegram_id: int, pdf_path: str, job_title: str):
             )
 
     try:
+        print("Pausing 2 seconds before sending PDF...")
+        time.sleep(2)
         asyncio.run(_send())
         print(f"✅ PDF successfully sent to Telegram user {telegram_id}")
     except Exception as e:
