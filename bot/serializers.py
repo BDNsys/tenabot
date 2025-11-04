@@ -10,6 +10,7 @@ class ResumeUploadSerializer(serializers.Serializer):
     
     # New field to capture the job title
     job_title = serializers.CharField(max_length=150) 
+    job_description = serializers.CharField(max_length=5000, required=False, allow_blank=True)
     
     # 7 MB limit in bytes (7 * 1024 * 1024)
     MAX_FILE_SIZE = 7340032 

@@ -118,7 +118,7 @@ class ResumeUploadView(APIView):
             #     target=services.process_and_save_resume_info, 
             #     args=(new_resume_id, db_file_path)
             # ).start()
-            services.process_and_save_resume_info(new_resume_id,db_file_path)
+            services.process_and_save_resume_info(new_resume_id,db_file_path,serializer.job_description)
             logger.info(f"🚀 [THREAD START] Background resume analysis launched for resume_id={new_resume_id}")
 
             return Response({
