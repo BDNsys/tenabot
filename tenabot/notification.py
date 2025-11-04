@@ -28,17 +28,28 @@ async def _send_pdf(bot_token: str, telegram_id: int, pdf_path: str, filename: s
     try:
         # Initialize the bot object
         bot = Bot(token=bot_token)
+        file_stats = os.stat(pdf_path)
+        logger.info(f"📊 File details - Size: {file_stats.st_size} bytes, Modified: {time.ctime(file_stats.st_mtime)}")
+        # Read and log first few bytes to verify content
+        with open(pdf_path, 'rb') as f:
+            first_bytes = f.read(20)
+            logger.info(f"🔍 PDF header: {first_bytes}")
         
         async with bot:
             logger.info(f"Uploading file: {filename} to chat {telegram_id}")
-            await bot.send_document(
+            result=await bot.send_document(
                 chat_id=telegram_id,
                 # InputFile prepares the file for upload
                 document=InputFile(pdf_path, filename=filename),
                 caption=caption,
                 parse_mode="Markdown"
             )
-            logger.info(f"Successfully uploaded {filename}.")
+            # Log successful send details
+            if hasattr(result, 'document'):
+                logger.info(f"✅ File sent successfully. Telegram file ID: {result.document.file_id}")
+            else:
+                logger.info("✅ Message sent but document details not available")
+            
             
     except Exception as e:
         # Re-raising the exception to be caught by the calling function
