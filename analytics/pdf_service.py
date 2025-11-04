@@ -100,7 +100,7 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
             story.append(Paragraph("Core Values", styles["SectionTitle"]))
             # ✅ Cast List Item to string
             story.append(ListFlowable(
-                [ListItem(Paragraph(str(v), styles["Body"])) for v in core_values if v is not None],
+               [ListItem(Paragraph(str(v), styles["Body"])) for v in core_values],
                 bulletType="bullet",
                 start=0.2 * inch
             ))
@@ -114,7 +114,7 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
             story.append(Paragraph("Skills", styles["SectionTitle"]))
             # ✅ Cast List Item to string
             story.append(ListFlowable(
-                [ListItem(Paragraph(str(s), styles["Body"])) for s in skills if s is not None],
+                [ListItem(Paragraph(str(s), styles["Body"])) for s in skills],
                 bulletType="bullet",
                 start=0.2 * inch
             ))
