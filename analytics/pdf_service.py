@@ -44,6 +44,7 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         
         logger.info(f"🧾 [PDF] Generating Harvard-style resume for user {telegram_id}")
         logger.info(f"🗂 Saving to {pdf_path}")
+        logger.debug(f"[PDF DEBUG]  Before Doc")
 
         # --- Document Setup ---
         doc = SimpleDocTemplate(
@@ -93,10 +94,12 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         # --- Initial Divider ---
         story.append(HRFlowable(width="100%", thickness=1, color=colors.lightgrey))
         story.append(Spacer(1, 0.25 * inch))
+        logger.debug(f"[PDF DEBUG] Core Value Before")
 
         # --- Core Values ---
         core_values = clean_list_data(resume_data.get("core_values", []))
         if core_values:
+            logger.debug(f"[PDF DEBUG] Core Value inside")
             story.append(Paragraph("Core Values", styles["SectionTitle"]))
             for i, v in enumerate(core_values):
                 try:
