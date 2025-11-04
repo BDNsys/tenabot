@@ -95,15 +95,15 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         story.append(Spacer(1, 0.25 * inch))
 
         # --- Core Values ---
-        core_values =clean_list_data(resume_data.get("core_values", []))
+        core_values = clean_list_data(resume_data.get("core_values", []))
         if core_values:
             story.append(Paragraph("Core Values", styles["SectionTitle"]))
-            # ✅ Cast List Item to string
-            story.append(ListFlowable(
-               [ListItem(Paragraph(str(v), styles["Body"])) for v in core_values],
-                bulletType="bullet",
-                start=0.2 * inch
-            ))
+            for i, v in enumerate(core_values):
+                try:
+                    logger.debug(f"[PDF DEBUG] Core Value [{i}]: {v} (type={type(v)})")
+                    story.append(ListItem(Paragraph(str(v), styles["Body"])))
+                except Exception as e:
+                    logger.error(f"[PDF ERROR] Failed Core Value item: {v} ({type(v)}) -> {e}", exc_info=True)
             story.append(Spacer(1, 0.25 * inch))
             story.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
             story.append(Spacer(1, 0.25 * inch))
@@ -112,12 +112,12 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         skills = clean_list_data(resume_data.get("skills", []))
         if skills:
             story.append(Paragraph("Skills", styles["SectionTitle"]))
-            # ✅ Cast List Item to string
-            story.append(ListFlowable(
-                [ListItem(Paragraph(str(s), styles["Body"])) for s in skills],
-                bulletType="bullet",
-                start=0.2 * inch
-            ))
+            for i, s in enumerate(skills):
+                try:
+                    logger.debug(f"[PDF DEBUG] Skill [{i}]: {s} (type={type(s)})")
+                    story.append(ListItem(Paragraph(str(s), styles["Body"])))
+                except Exception as e:
+                    logger.error(f"[PDF ERROR] Failed Skill item: {s} ({type(s)}) -> {e}", exc_info=True)
             story.append(Spacer(1, 0.25 * inch))
             story.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
             story.append(Spacer(1, 0.25 * inch))
@@ -126,17 +126,20 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         work_history = resume_data.get("work_history", [])
         if work_history:
             story.append(Paragraph("Work Experience", styles["SectionTitle"]))
-            for job in work_history:
-                # ✅ Cast components to string
-                title_company = f"{str(job.get('title', 'N/A'))} — {str(job.get('company', 'N/A'))}"
-                story.append(Paragraph(title_company, styles["JobTitle"]))
-                
-                dates = f"{str(job.get('start_date', ''))} - {str(job.get('end_date', 'Present'))}"
-                story.append(Paragraph(dates, styles["ItalicSmall"]))
-                
-                if job.get("summary"):
-                    story.append(Paragraph(str(job["summary"]), styles["Body"]))
-                story.append(Spacer(1, 0.15 * inch))
+            for i, job in enumerate(work_history):
+                try:
+                    logger.debug(f"[PDF DEBUG] Work History [{i}]: {job}")
+                    title_company = f"{str(job.get('title', 'N/A'))} — {str(job.get('company', 'N/A'))}"
+                    story.append(Paragraph(title_company, styles["JobTitle"]))
+                    
+                    dates = f"{str(job.get('start_date', ''))} - {str(job.get('end_date', 'Present'))}"
+                    story.append(Paragraph(dates, styles["ItalicSmall"]))
+                    
+                    if job.get("summary"):
+                        story.append(Paragraph(str(job["summary"]), styles["Body"]))
+                    story.append(Spacer(1, 0.15 * inch))
+                except Exception as e:
+                    logger.error(f"[PDF ERROR] Failed Work History [{i}] -> {e}", exc_info=True)
             story.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
             story.append(Spacer(1, 0.25 * inch))
 
@@ -144,29 +147,18 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         education = resume_data.get("full_education", [])
         if education:
             story.append(Paragraph("Education", styles["SectionTitle"]))
-            for edu in education:
-                # ✅ Cast all dict lookups to string before concatenation
-                edu_line = (
-                    f"**{str(edu.get('degree', ''))}** in {str(edu.get('field_of_study', ''))} "
-                    f"from **{str(edu.get('institution', ''))}** ({str(edu.get('graduation_date', ''))})"
-                )
-
-                # Convert markdown-like bold (**text**) to <b>text</b> for ReportLab
-                edu_line_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", edu_line)
-
-                story.append(Paragraph(edu_line_html, styles["Body"]))
-                story.append(Spacer(1, 0.1 * inch))
-
-        # --- Footer ---
-        story.append(Spacer(1, 0.3 * inch))
-        story.append(HRFlowable(width="100%", thickness=1, color=colors.lightgrey))
-        story.append(Spacer(1, 0.1 * inch))
-        story.append(Paragraph("Generated by <b>Tenabot AI Resume Assistant</b> using Gemini AI.", styles["ItalicSmall"]))
-
-        # --- Build Document ---
-        doc.build(story)
-        logger.info(f"✅ [PDF] Successfully created Harvard PDF for {telegram_id}")
-        return pdf_path
+            for i, edu in enumerate(education):
+                try:
+                    logger.debug(f"[PDF DEBUG] Education [{i}]: {edu}")
+                    edu_line = (
+                        f"**{str(edu.get('degree', ''))}** in {str(edu.get('field_of_study', ''))} "
+                        f"from **{str(edu.get('institution', ''))}** ({str(edu.get('graduation_date', ''))})"
+                    )
+                    edu_line_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", edu_line)
+                    story.append(Paragraph(edu_line_html, styles["Body"]))
+                    story.append(Spacer(1, 0.1 * inch))
+                except Exception as e:
+                    logger.error(f"[PDF ERROR] Failed Education [{i}] -> {e}", exc_info=True)
 
     except Exception as e:
         logger.error(f"💥 [PDF] Failed to generate Harvard PDF for {telegram_id}: {e}", exc_info=True)
