@@ -1,107 +1,123 @@
+# tenabot/analytics/pdf_generation_service.py
 import os
 import time
+import shutil
+import subprocess
+from typing import Dict, Any, List, Tuple, Optional
 from django.conf import settings
-from typing import Dict, Any, List
+import logging
+
+logger = logging.getLogger(__name__)
 
 def format_latex_list(items: List[str]) -> str:
-    """Formats a Python list of strings into a LaTeX itemize environment."""
     if not items:
         return ""
-    
-    # Simple list (e.g., for Skills, Core Values)
     latex_list = "\n".join([f"\\item {item}" for item in items])
     return f"\\begin{{itemize}}[label=-]\n{latex_list}\n\\end{{itemize}}"
 
 def format_work_history(work_history: List[Dict[str, str]]) -> str:
-    """Formats the work history list into moderncv's cventry format."""
     entries = []
-    # cventry requires 6 arguments: years, title, company, city, grade, description
-    # We map to: {years}, {title}, {company}, {}, {}, {description}
     for entry in work_history:
         years = f"{entry.get('start_date', '')}--{entry.get('end_date', '')}"
         title = entry.get('title', 'N/A')
         company = entry.get('company', 'N/A')
         summary = entry.get('summary', 'No summary provided.')
-
-        # Use an itemize list for the summary for better formatting
-        description_list = f"\\begin{{itemize}}[label={{$\bullet$}}, itemsep=0pt]\n\\item {summary}\n\\end{{itemize}}"
-        
-        # NOTE: \cventry must have exactly 6 arguments. Empty braces {} are used for unused fields (city, grade)
+        description_list = (
+            "\\begin{itemize}[label={$\\bullet$}, itemsep=0pt]\n"
+            f"\\item {summary}\n"
+            "\\end{itemize}"
+        )
+        # keep six fields format consistent with moderncv expectations
         entry_latex = f"\\cventry{{{years}}}{{{title}}}{{{company}}}{{}}{{{description_list}}}"
         entries.append(entry_latex)
-        
     return "\n\n".join(entries)
 
 
-def generate_harvard_pdf(resume_data: Dict[str, Any], telegram_id: int) -> str:
+def _write_tex(tex_path: str, latex_content: str) -> None:
+    with open(tex_path, "w", encoding="utf-8") as f:
+        f.write(latex_content)
+
+
+def _run_pdflatex(tex_path: str, work_dir: str, timeout: int = 30) -> Tuple[int, str, str]:
     """
-    Generates the content for a LaTeX document using the moderncv class.
-    
-    Returns: The absolute path to the generated .tex file.
+    Run pdflatex in `work_dir`. Returns (returncode, stdout, stderr).
     """
-    
-    # 1. Define output path (we save the .tex file next to the media root)
-    # The actual PDF compilation happens externally, but we prepare the source file.
-    output_dir = os.path.join(settings.MEDIA_ROOT, 'generated_resumes')
+    # We run pdflatex twice to resolve cross-references if any
+    cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", os.path.basename(tex_path)]
+    combined_stdout = []
+    combined_stderr = []
+
+    for i in range(2):
+        proc = subprocess.run(
+            cmd,
+            cwd=work_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
+        )
+        combined_stdout.append(proc.stdout.decode("utf-8", errors="replace"))
+        combined_stderr.append(proc.stderr.decode("utf-8", errors="replace"))
+        # If first run failed with non-zero code, break early
+        if proc.returncode != 0:
+            return proc.returncode, "\n".join(combined_stdout), "\n".join(combined_stderr)
+
+    return proc.returncode, "\n".join(combined_stdout), "\n".join(combined_stderr)
+
+
+def generate_harvard_pdf(resume_data: Dict[str, Any], telegram_id: int) -> Tuple[Optional[str], str]:
+    """
+    Generate a LaTeX file and compile it to PDF using pdflatex.
+
+    Returns:
+        (pdf_path_or_None, log_path)
+    The log_path always points to a text file with pdflatex stdout+stderr for debugging.
+    """
+    output_dir = os.path.join(settings.MEDIA_ROOT, "generated_resumes")
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Use the telegram_id and current timestamp for a unique file name
-    filename_base = f"resume_{telegram_id}_{int(time.time())}"
+
+    timestamp = int(time.time())
+    filename_base = f"resume_{telegram_id}_{timestamp}"
     tex_path = os.path.join(output_dir, f"{filename_base}.tex")
     pdf_path = os.path.join(output_dir, f"{filename_base}.pdf")
-    
-    
-    # --- Data Extraction ---
-    # We extract data from the structure stored in the ResumeInfo model's structured_json
-    contact_name = f"User {telegram_id}" # Placeholder, as name isn't stored in ResumeInfo
-    phone = resume_data.get('phone', 'N/A')
-    email = resume_data.get('email', 'N/A')
-    linkedin = resume_data.get('linkedin', 'N/A')
-    
-    # Extract lists
-    work_history = resume_data.get('work_history', [])
-    skills = resume_data.get('skills', [])
-    core_values = resume_data.get('core_values', [])
-    full_education = resume_data.get('full_education', [])
-    
-    # Format sections
+    log_path = os.path.join(output_dir, f"{filename_base}.log.txt")
+    aux_dir = os.path.join(output_dir, f"{filename_base}_aux")
+    os.makedirs(aux_dir, exist_ok=True)
+
+    # --- Build LaTeX content ---
+    contact_name = f"User {telegram_id}"
+    phone = resume_data.get("phone", "N/A")
+    email = resume_data.get("email", "N/A")
+    linkedin = resume_data.get("linkedin", "N/A")
+    work_history = resume_data.get("work_history", [])
+    skills = resume_data.get("skills", [])
+    core_values = resume_data.get("core_values", [])
+    full_education = resume_data.get("full_education", [])
+    education_level = resume_data.get("education_level", "Education Summary")
+
     work_history_latex = format_work_history(work_history)
     skills_latex = format_latex_list(skills)
     core_values_latex = format_latex_list(core_values)
-    
-    # Simple education summary for the header
-    education_level = resume_data.get('education_level', 'Education Summary')
-    
-    
-    # --- LaTeX Content (Using moderncv for structure) ---
-    
-    # NOTE: In a real-world scenario, you would run 'pdflatex' or similar here.
-    # For this environment, we just create the .tex file and assume successful compilation
-    # to the corresponding .pdf file path.
-    
+
     latex_content = f"""
 \\documentclass[11pt, a4paper]{{moderncv}}
-\\moderncvstyle{{casual}} % Harvard-style is often simple/casual
-\\moderncvcolor{{blue}}  % Optional color
+\\moderncvstyle{{casual}}
+\\moderncvcolor{{blue}}
 \\usepackage[utf8]{{inputenc}}
 \\usepackage[T1]{{fontenc}}
 \\usepackage{{ragged2e}}
 \\usepackage[scale=0.8]{{geometry}}
 
-% Personal data
 \\name{{{contact_name}}}{{}}
 \\title{{{resume_data.get('position_inferred', 'Professional Resume')}}}
-\\address{{}}{{}}{{}} % Address optional
+\\address{{}}{{}}{{}}
 \\mobile{{{phone}}}
 \\email{{{email}}}
 \\social[linkedin]{{https://linkedin.com/in/profile}}{{{linkedin}}}
-% Ensure command exists even if data is missing, using a placeholder for the URL
-\\extrainfo{{}} 
+\\extrainfo{{}}
 
 \\begin{{document}}
 \\makecvtitle
 
-% --- Core Values / Summary ---
 \\section{{Professional Summary}}
 \\begin{{itemize}}[label={{$\\star$}}]
 \\item This resume was generated by Tenabot using Gemini AI to extract and structure data.
@@ -110,48 +126,91 @@ def generate_harvard_pdf(resume_data: Dict[str, Any], telegram_id: int) -> str:
 \\section{{Core Values}}
 {core_values_latex}
 
-
-% --- Experience ---
 \\section{{Experience}}
 {work_history_latex}
 
-
-% --- Education ---
 \\section{{Education}}
-\\cvitem{{{education_level}}}{{
-    % List all education entries (simple list for brevity)
+\\cvitem{{{education_level}}}{{%
     \\begin{{itemize}}[itemsep=0pt]
 """
-
     for edu in full_education:
-        latex_content += f"        \\item \\textbf{{{edu.get('degree')}}} in {edu.get('field_of_study')} from {edu.get('institution')} ({edu.get('graduation_date')})\n"
+        latex_content += (
+            f"        \\item \\textbf{{{edu.get('degree','')}}} in {edu.get('field_of_study','')} "
+            f"from {edu.get('institution','')} ({edu.get('graduation_date','')})\n"
+        )
 
     latex_content += f"""
     \\end{{itemize}}
 }}
 
-
-% --- Skills ---
 \\section{{Skills}}
 {skills_latex}
-
 
 \\end{{document}}
 """
 
-    # 2. Write the LaTeX content to the .tex file
+    # Write .tex file
     try:
-        with open(tex_path, 'w', encoding='utf-8') as f:
-            f.write(latex_content)
-        
-        # 3. Simulate compilation by creating an empty PDF file
-        # In a real setup, a command like subprocess.run(["pdflatex", tex_path]) would run here.
-        # We assume success and create the target PDF file path.
-        with open(pdf_path, 'w') as f:
-            f.write("") # Write empty content to create the file
-            
-        return pdf_path # Return the path to the expected PDF
-    
+        _write_tex(tex_path, latex_content)
     except Exception as e:
-        print(f"Error generating or saving LaTeX/PDF files: {e}")
-        return None
+        logger.exception("Failed to write .tex file: %s", e)
+        # write a minimal log for caller
+        with open(log_path, "w", encoding="utf-8") as lf:
+            lf.write(f"Failed to write .tex file: {e}\n")
+        return None, log_path
+
+    # Copy tex to aux_dir and run pdflatex there (keeps output files separate)
+    try:
+        # Copy the .tex into aux_dir to keep compilation artifacts isolated
+        aux_tex_path = os.path.join(aux_dir, os.path.basename(tex_path))
+        shutil.copy2(tex_path, aux_tex_path)
+
+        rc, stdout_txt, stderr_txt = _run_pdflatex(aux_tex_path, aux_dir, timeout=60)
+
+        # Save compilation log
+        with open(log_path, "w", encoding="utf-8") as lf:
+            lf.write("=== PDFLaTeX STDOUT ===\n")
+            lf.write(stdout_txt + "\n\n")
+            lf.write("=== PDFLaTeX STDERR ===\n")
+            lf.write(stderr_txt + "\n\n")
+            lf.write(f"=== RETURN CODE: {rc} ===\n")
+
+        if rc != 0:
+            logger.error("pdflatex failed (rc=%s). See log: %s", rc, log_path)
+            return None, log_path
+
+        # Move resulting PDF from aux_dir to output_dir
+        generated_pdf_name = os.path.splitext(os.path.basename(aux_tex_path))[0] + ".pdf"
+        generated_pdf_path = os.path.join(aux_dir, generated_pdf_name)
+        if not os.path.exists(generated_pdf_path):
+            logger.error("pdflatex returned success but PDF not found at expected path: %s", generated_pdf_path)
+            return None, log_path
+
+        shutil.move(generated_pdf_path, pdf_path)
+
+        # Optionally keep auxiliary files for debugging or remove them:
+        # shutil.rmtree(aux_dir)  # uncomment to remove aux files
+        logger.info("PDF generated: %s (log: %s)", pdf_path, log_path)
+        return pdf_path, log_path
+
+    except subprocess.TimeoutExpired as texp:
+        logger.exception("pdflatex timed out: %s", texp)
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(f"\nTimeout: {texp}\n")
+        return None, log_path
+
+    except FileNotFoundError as fnf:
+        # pdflatex not installed
+        err_msg = (
+            "pdflatex not found. Ensure TeX Live / pdflatex is installed on the machine."
+        )
+        logger.exception(err_msg)
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(err_msg + "\n")
+        return None, log_path
+
+    except Exception as e:
+        logger.exception("Unexpected error during PDF generation: %s", e)
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(f"Unexpected error: {e}\n")
+        return None, log_path
