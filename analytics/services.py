@@ -144,7 +144,7 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         pdf_path = generate_harvard_pdf(analysis_data, telegram_id)
         if pdf_path:
             threading.Thread(
-                target=send_pdf_to_telegram, 
+                target=send_pdf_thread_safe, 
                 args=(telegram_id, pdf_path, job_title)
             ).start()
             
@@ -172,7 +172,13 @@ def process_and_save_resume_info(resume_id: int, file_path: str):
         db_gen.close()
         logger.info("🔚 [END] Database connection closed.")
         
-        
+   
+def send_pdf_thread_safe(telegram_id, pdf_path, job_title):
+    try:
+        send_pdf_to_telegram(telegram_id, pdf_path, job_title)
+    except Exception as e:
+        logger.error(f"⚠️ PDF sending failed in thread: {e}", exc_info=True)
+     
         
 def strip_additional_props(schema: dict) -> dict:
     if isinstance(schema, dict):
