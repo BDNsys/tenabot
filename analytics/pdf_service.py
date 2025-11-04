@@ -183,8 +183,12 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
                     f"**{edu.get('degree', '')}** in {edu.get('field_of_study', '')} "
                     f"from **{edu.get('institution', '')}** ({edu.get('graduation_date', '')})"
                 )
-                # Note: This Paragaph needs to be styled to show bolding if using ReportLab's markup
-                story.append(Paragraph(edu_line.replace("**", "<b>").replace("</b>", "</b>"), styles["Body"])) 
+
+                # Convert markdown-like bold (**text**) to <b>text</b> for ReportLab
+                import re
+                edu_line_html = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", edu_line)
+
+                story.append(Paragraph(edu_line_html, styles["Body"]))
                 story.append(Spacer(1, 0.1 * inch))
 
         # --- Footer ---
