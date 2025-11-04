@@ -134,13 +134,12 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         # --- Initial Divider ---
         story.append(HRFlowable(width="100%", thickness=1, color=colors.lightgrey))
         story.append(Spacer(1, 0.25 * inch))
-
-        # --- Core Values ---
+        # --- Core Values-------
         core_values = resume_data.get("core_values", [])
         if core_values:
             story.append(Paragraph("Core Values", styles["SectionTitle"]))
             story.append(ListFlowable(
-                [ListItem(Paragraph(v, styles["Body"])) for v in core_values],
+                [ListItem(Paragraph(str(v), styles["Body"])) for v in core_values],
                 bulletType="bullet",
                 start=0.2 * inch
             ))
@@ -153,14 +152,13 @@ def generate_harvard_pdf(resume_data: dict, telegram_id: int) -> str | None:
         if skills:
             story.append(Paragraph("Skills", styles["SectionTitle"]))
             story.append(ListFlowable(
-                [ListItem(Paragraph(s, styles["Body"])) for s in skills],
+                [ListItem(Paragraph(str(s), styles["Body"])) for s in skills],
                 bulletType="bullet",
                 start=0.2 * inch
             ))
             story.append(Spacer(1, 0.25 * inch))
             story.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
             story.append(Spacer(1, 0.25 * inch))
-
         # --- Work Experience ---
         work_history = resume_data.get("work_history", [])
         if work_history:
