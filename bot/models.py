@@ -1,7 +1,7 @@
 #tenabot/bot/models.py
 from datetime import datetime, date, timezone
 from sqlalchemy import (
-    Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float
+    Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float,UniqueConstraint
 )
 from sqlalchemy.orm import relationship, declarative_base
 
