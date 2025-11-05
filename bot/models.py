@@ -78,24 +78,11 @@ class ResumeInfo(Base):
 # --- 4. UsageTracker Model ---
 class UsageTracker(Base):
     __tablename__ = "usage_tracker"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
-    
-    # 1. Removed unique=True from user_id to allow multiple entries per user
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
-    date = Column(Date, default=date.today, nullable=False)
-    count = Column(Integer, default=0, nullable=False)
-
-    # 2. DEFINED THE COMPOSITE UNIQUE CONSTRAINT
-    # This prevents duplicate (user_id, date) pairs.
-    __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='uq_user_date_unique'),
-    )
-
-    # Relationships - NOTE: We are changing back_populates to fix the error below
-    user = relationship("User", back_populates="usage_trackers") 
-
+    user_id = Column(Integer, ForeignKey("users.id"))
+    date = Column(Date, default=date.today)
+    count = Column(Integer, default=0)
+    # Relationships
+    user = relationship("User", back_populates="usage") # Links to the User model above
     def __repr__(self):
-        # Added date for full context
-        return f"<UsageTracker user={self.user_id} date={self.date} count={self.count}>"
+        return f"<UsageTracker user={self.user_id} count={self.count}>" 
