@@ -1,3 +1,4 @@
+<!-- tenabot/bot/templates/bot/bot.html -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -127,7 +128,8 @@
       <p class="text-gray-400 text-sm mb-4">PDF files only. Max size: 7MB.</p>
 
       <form id="uploadForm">
-        <label for="job_title" class="block text-sm font-medium mb-1">Target Job Title <span class="text-red-500">*</span></label>
+        <label for="job_title" class="block text-sm font-medium mb-1">Target Job Title <span
+            class="text-red-500">*</span></label>
         <input type="text" id="job_title" name="job_title" class="input-field"
           placeholder="e.g., Senior Software Engineer" required>
 
@@ -135,7 +137,8 @@
         <textarea id="job_description" name="job_description" class="input-field"
           placeholder="Paste the job description here for better tailoring."></textarea>
 
-        <label for="pdf_file" class="block text-sm font-medium mb-1 mt-4">Select PDF Resume <span class="text-red-500">*</span></label>
+        <label for="pdf_file" class="block text-sm font-medium mb-1 mt-4">Select PDF Resume <span
+            class="text-red-500">*</span></label>
         <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" class="input-field pt-2" required>
 
         <p id="upload-error" class="error-message hidden-view"></p>
@@ -155,7 +158,7 @@
       <div class="progress-bar mb-6">
         <div id="progress-fill" class="progress-fill"></div>
       </div>
-      
+
       <p class="text-sm text-gray-500">Please keep the Web App open.</p>
     </div>
 
@@ -169,268 +172,180 @@
     </div>
 
   </div>
-
   <script>
     // === CONFIGURATION ===
     const API_REGISTER_URL = "https://tena.bdnsys.com/api/register_telegram_user/";
     const API_UPLOAD_URL = "https://tena.bdnsys.com/bot/upload-resume/";
 
-    // Random messages for the loading screen
-    const LOADING_MESSAGES = [
-      "Securing connection and initializing AI parsing engines...",
-      "Extracting core skills and work history from your document...",
-      "Identifying the critical keywords for your target job title...",
-      "Synthesizing your experience into Harvard-style bullet points...",
-      "Tailoring your resume structure based on best practices...",
-      "Generating final PDF structure with ReportLab...",
-      "Almost done! Sending the personalized resume to Telegram...",
-    ];
-
-    // === TELEGRAM WEB APP INIT ===
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
-    // Use theme colors for WebApp header/background
     tg.setHeaderColor("secondary_bg_color");
     tg.setBackgroundColor("bg_color");
 
     // === STATE ===
-    let csrfToken = null;
-    let loadingInterval = null; // Used to store the interval ID for the loading messages
-    let progressInterval = null; // Used to store the interval ID for the progress bar
+    let accessToken = sessionStorage.getItem("accessToken") || null;
+    let refreshToken = sessionStorage.getItem("refreshToken") || null;
+    let loadingInterval = null;
+    let progressInterval = null;
 
-    // === VIEW MANAGEMENT ===
     const views = {
       'welcome': document.getElementById('welcome-view'),
       'upload': document.getElementById('upload-view'),
-      'loading': document.getElementById('loading-view'), // New View
+      'loading': document.getElementById('loading-view'),
       'success': document.getElementById('success-view'),
     };
 
-    function switchView(targetViewId, details = null) {
-      // Clear any running loading intervals when switching views
+    const LOADING_MESSAGES = [
+      "Securing connection and initializing AI parsing engines...",
+      "Extracting core skills and work history...",
+      "Identifying critical job keywords...",
+      "Crafting Harvard-style resume bullets...",
+      "Optimizing layout and formatting...",
+      "Preparing PDF...",
+      "Sending results to Telegram...",
+    ];
+
+    // === VIEW HANDLING ===
+    function switchView(viewId, details = null) {
       clearInterval(loadingInterval);
       clearInterval(progressInterval);
-      
-      Object.keys(views).forEach(id => {
-        if (id === targetViewId) {
-          views[id].classList.remove('hidden-view');
-        } else {
-          views[id].classList.add('hidden-view');
-        }
-      });
+      Object.keys(views).forEach(v => views[v].classList.toggle("hidden-view", v !== viewId));
 
-      if (targetViewId === 'success' && details) {
+      if (viewId === "success" && details) {
         document.getElementById('success-details').innerHTML = `
         <p><strong>Resume ID:</strong> ${details.resume_id}</p>
         <p><strong>Job Title:</strong> ${details.job_title}</p>
         <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
       `;
-      } else if (targetViewId === 'loading') {
-        startLoadingEffect();
-      }
+      } else if (viewId === "loading") startLoadingEffect();
     }
 
-    // === LOADING EFFECT LOGIC ===
     function startLoadingEffect() {
-      const loadingMessageElement = document.getElementById('loading-message');
-      const progressBarFill = document.getElementById('progress-fill');
-      let messageIndex = 0;
-      let currentProgress = 5; // Start slightly above zero
+      let i = 0, progress = 5;
+      const msg = document.getElementById("loading-message");
+      const bar = document.getElementById("progress-fill");
 
-      // Set up the interval for cycling messages
       loadingInterval = setInterval(() => {
-        messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
-        loadingMessageElement.textContent = LOADING_MESSAGES[messageIndex];
-      }, 3000); // Change message every 3 seconds
+        msg.textContent = LOADING_MESSAGES[i++ % LOADING_MESSAGES.length];
+      }, 3000);
 
-      // Set up the interval for progress bar simulation (slowly reaches 90%)
       progressInterval = setInterval(() => {
-        if (currentProgress < 90) {
-          currentProgress += 5; // Increment by 5 every 0.5s
-          progressBarFill.style.width = `${currentProgress}%`;
-        } else {
-          clearInterval(progressInterval); // Stop incremental progress
-        }
+        if (progress < 90) {
+          progress += 5;
+          bar.style.width = `${progress}%`;
+        } else clearInterval(progressInterval);
       }, 500);
     }
-    
-    // Function to ensure the progress bar reaches 100% on successful completion
+
     function finishLoadingEffect() {
       clearInterval(loadingInterval);
       clearInterval(progressInterval);
-      document.getElementById('progress-fill').style.width = '100%';
-      document.getElementById('loading-message').textContent = 'Finalizing and notifying bot...';
+      document.getElementById("progress-fill").style.width = "100%";
+      document.getElementById("loading-message").textContent = "Finalizing...";
     }
 
-
-    // === USER REGISTRATION LOGIC (Unchanged) ===
+    // === AUTH ===
     async function registerUser(userData) {
       const initData = tg?.initData;
-      if (!initData) {
-        console.error("[TenaBot] Telegram initData is missing.");
-        return;
-      }
+      if (!initData) return tg.showAlert("Telegram initData missing.");
 
       try {
-        const response = await fetch(API_REGISTER_URL, {
+        const res = await fetch(API_REGISTER_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            initData: initData,
-            telegram_id: userData.id,
-            username: userData.username,
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            avatar_url: userData.photo_url || null,
-          }),
+          body: JSON.stringify({ initData })
         });
 
-        const data = await response.json();
-        if (response.ok && data.success && data.user) {
-          updateUI(data.user);
-          // ✅ Save CSRF token globally and in sessionStorage
-          csrfToken = data.csrf_token;
-          sessionStorage.setItem("csrfToken", csrfToken);
-        } else {
-          console.warn("[TenaBot] Registration failed:", data);
-          tg.showAlert("Authentication failed. Please restart the bot.");
+        const data = await res.json();
+        if (!res.ok || !data.access) {
+          tg.showAlert("Authentication failed. Restart bot.");
+          return;
         }
-      } catch (err) {
-        console.error("[TenaBot] Registration error:", err);
-        tg.showAlert("Network error during registration.");
+
+        accessToken = data.access;
+        refreshToken = data.refresh;
+
+        sessionStorage.setItem("accessToken", accessToken);
+        sessionStorage.setItem("refreshToken", refreshToken);
+
+        updateUI(data.user);
+      } catch (e) {
+        tg.showAlert("Network error during login");
       }
     }
 
-    // === UI UPDATE (Unchanged) ===
+    // === UI ===
     function updateUI(user) {
       document.getElementById("user-name").textContent =
-        `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
-      document.getElementById("user-id").textContent = user.telegram_id || user.id || "N/A";
+        `${user.first_name} ${user.last_name} (@${user.username})`;
+      document.getElementById("user-id").textContent = user.telegram_id;
     }
 
-    // === FILE UPLOAD LOGIC (Updated) ===
-    async function handleFileUpload(event) {
-      event.preventDefault();
+    // === FILE UPLOAD ===
+    async function handleFileUpload(e) {
+      e.preventDefault();
+      const file = document.getElementById('pdf_file').files[0];
+      const job = document.getElementById('job_title').value;
+      const desc = document.getElementById('job_description').value;
 
-      const form = event.target;
-      const submitBtn = document.getElementById("submitUploadBtn");
-      const errorDisplay = document.getElementById("upload-error");
+      if (!file) return showError("Please select a PDF");
 
-      errorDisplay.classList.add('hidden-view');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Preparing...';
-
-      const fileInput = document.getElementById('pdf_file');
-      const jobTitleInput = document.getElementById('job_title');
-      const jobDescriptionInput = document.getElementById('job_description'); // New Input
-
-      if (!fileInput.files[0]) {
-        showError("Please select a PDF file.");
-        resetUploadButton();
-        return;
-      }
-
-      // --- Switch to Loading View ---
-      switchView('loading'); 
-      tg.MainButton.show().setText('AI is Working Hard...');
+      switchView("loading");
+      tg.MainButton.show().setText("AI working...");
 
       const formData = new FormData();
-      formData.append('pdf_file', fileInput.files[0]);
-      formData.append('job_title', jobTitleInput.value);
-      formData.append('job_description', jobDescriptionInput.value); // Append new field
-
-      // Retrieve token
-      const token = csrfToken || sessionStorage.getItem("csrfToken");
-      if (!token) {
-        showError("CSRF token missing. Please restart the bot.");
-        switchView('upload'); // Go back to upload view on failure
-        return;
-      }
+      formData.append("pdf_file", file);
+      formData.append("job_title", job);
+      formData.append("job_description", desc);
 
       try {
-        const response = await fetch(API_UPLOAD_URL, {
-          method: 'POST',
+        const res = await fetch(API_UPLOAD_URL, {
+          method: "POST",
           headers: {
-            'X-CSRFToken': token, 
+            "Authorization": `Bearer ${accessToken}`
           },
-          body: formData,
-          credentials: 'include', 
+          body: formData
         });
 
-        const data = await response.json();
-        finishLoadingEffect(); // Progress bar reaches 100%
+        const data = await res.json();
+        finishLoadingEffect();
 
-        if (response.ok) {
-          // Wait a moment for the 100% progress bar to be visible
+        if (res.ok) {
           setTimeout(() => {
-            switchView('success', {
+            switchView("success", {
               resume_id: data.resume_id,
-              job_title: jobTitleInput.value,
+              job_title: job,
               uploads_today: data.uploads_today
             });
             tg.MainButton.hide();
-            tg.showPopup({ message: "Resume successfully uploaded and processing started!" });
-          }, 500); 
-
-        } else {
-          let errorMessage = "An unknown error occurred.";
-          if (data.detail) errorMessage = data.detail;
-          else if (data.pdf_file) errorMessage = data.pdf_file[0];
-          else if (data.non_field_errors) errorMessage = data.non_field_errors[0];
-          showError(errorMessage);
-          switchView('upload'); // Go back to upload view on failure
-          resetUploadButton();
-        }
-      } catch (error) {
-        console.error("[TenaBot] Upload error:", error);
-        finishLoadingEffect(); // Stop loading effects
-        showError("Network connection failed. Please try again.");
-        switchView('upload'); // Go back to upload view on failure
-        resetUploadButton();
+          }, 500);
+        } else showError(data.detail || "Upload failed");
+      } catch {
+        showError("Upload failed. Check network.");
+        switchView("upload");
       }
     }
 
-    // === UTILITY FUNCTIONS (Unchanged) ===
-    function showError(message) {
-      const errorDisplay = document.getElementById("upload-error");
-      errorDisplay.textContent = message;
-      errorDisplay.classList.remove('hidden-view');
-      tg.showAlert(message);
+    function showError(msg) {
+      const err = document.getElementById("upload-error");
+      err.textContent = msg;
+      err.classList.remove("hidden-view");
+      tg.showAlert(msg);
     }
 
-    function resetUploadButton() {
-      const submitBtn = document.getElementById("submitUploadBtn");
-      submitBtn.disabled = false;
-      submitBtn.textContent = '⬆️ Start Analysis';
-      tg.MainButton.hide();
-    }
-
-    // === EVENT LISTENERS ===
+    // === INIT ===
     document.addEventListener("DOMContentLoaded", () => {
-      const userData = tg?.initDataUnsafe?.user;
-      if (userData) {
-        updateUI({
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          username: userData.username,
-          telegram_id: userData.id,
-        });
-        registerUser(userData);
-      } else {
-        updateUI({ first_name: "Guest", last_name: "", username: "unknown", telegram_id: "N/A" });
+      const u = tg?.initDataUnsafe?.user;
+      if (u) {
+        updateUI(u);
+        registerUser(u);
       }
 
-      document.getElementById("goToUploadBtn").addEventListener("click", () => switchView('upload'));
-      
-      document.getElementById("cancelUploadBtn").addEventListener("click", () => {
-        switchView('welcome');
-        resetUploadButton();
-      });
-      
-      document.getElementById("uploadForm").addEventListener("submit", handleFileUpload);
-      
-      document.getElementById("closeWebAppBtn").addEventListener("click", () => tg.close());
+      document.getElementById("goToUploadBtn").onclick = () => switchView("upload");
+      document.getElementById("cancelUploadBtn").onclick = () => switchView("welcome");
+      document.getElementById("uploadForm").onsubmit = handleFileUpload;
+      document.getElementById("closeWebAppBtn").onclick = () => tg.close();
     });
   </script>
 

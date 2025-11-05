@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework.authentication import SessionAuthentication
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from sqlalchemy.orm.exc import NoResultFound
 from analytics import services
 
@@ -41,9 +41,8 @@ This view handles the resume file upload, saves it to disk, creates database rec
 """
 @method_decorator(csrf_exempt, name='dispatch')
 class ResumeUploadView(APIView):
-    authentication_classes = [SessionAuthentication]
+    authentication_classes = [JWTAuthentication]
     permission_classes = [permissions.IsAuthenticated]
-
     def post(self, request, *args, **kwargs):
         logger.info("📥 [UPLOAD INIT] Incoming resume upload request.")
         
