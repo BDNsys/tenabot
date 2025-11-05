@@ -2,7 +2,10 @@
 
 # Import the engine and Base from your SQLAlchemy setup
 from tenabot.db import engine
+from dotenv import load_dotenv
 
+# Ensure the .env file is loaded at the start of the module execution
+load_dotenv()
 
 # Import all your models so SQLAlchemy knows about them
 from bot.models import User, Resume, ResumeInfo, UsageTracker ,Base

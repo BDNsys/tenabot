@@ -4,10 +4,7 @@ from sqlalchemy import (
     Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float,UniqueConstraint
 )
 from sqlalchemy.orm import relationship, declarative_base
-from dotenv import load_dotenv
 
-# Ensure the .env file is loaded at the start of the module execution
-load_dotenv()
 
 Base = declarative_base()
 
