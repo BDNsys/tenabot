@@ -1,3 +1,4 @@
+#tenabot/analytics/models.py
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 
@@ -33,15 +34,19 @@ class Education(BaseModel):
 class ResumeAnalysisSchema(BaseModel):
     """
     The main schema matching the fields we want to populate in ResumeInfo.
-    
-    NOTE: The 'structured_json' field was removed to eliminate Dict[str, Any].
-    The data returned by Gemini will *be* the structured JSON dictionary.
     """
     
     # Simple Fields
+    # V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V
+    name: str = Field(description="The full name of the candidate as listed on the resume.")
+    # ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
     phone: Optional[str] = Field(None, max_length=50)
     email: Optional[str] = Field(None, max_length=150)
     linkedin: Optional[str] = Field(None, max_length=255)
+    
+    # V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V V
+    github: Optional[str] = Field(None, max_length=255, description="The candidate's GitHub profile URL.")
+    # ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^ ^
     position_inferred: str = Field(description="The primary job role or career target inferred from the resume.")
     education_level: str = Field(description="Highest education level, e.g., 'Master', 'BSc in Computer Science'.")
     
@@ -55,7 +60,6 @@ class ResumeAnalysisSchema(BaseModel):
     
     # Configuration to prevent additionalProperties from being generated
     model_config = ConfigDict(
-        # The key setting to remove 'additionalProperties' from the schema
         json_schema_extra={"additionalProperties": False}
     )
 
