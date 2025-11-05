@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 import sys
 import os
 import logging
-from datetime import timedelta
+
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 logging.basicConfig(encoding='utf-8')
@@ -71,7 +71,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'rest_framework_simplejwt',
     'users',
     'bot',
     'analytics'
@@ -192,25 +191,6 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated', # Default for most views
     ]
-}
-SIMPLE_JWT = {
-    # How long access tokens are valid
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60), 
-    
-    # How long refresh tokens are valid
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  
-
-    # Whether a new refresh token is issued every time the refresh endpoint is used
-    'ROTATE_REFRESH_TOKENS': True, 
-    
-    # Whether to blacklist old refresh tokens after rotation (requires token_blacklist app)
-    'BLACKLIST_AFTER_ROTATION': True, 
-    
-    # Header type (e.g., "Bearer <token>")
-    'AUTH_HEADER_TYPES': ('Bearer',), 
-    
-    # The key used to sign the token (defaults to SECRET_KEY)
-    'SIGNING_KEY': None, 
 }
 
 TELEGRAM_BOT_TOKEN="8396582526:AAFk6qgvwI858nv1LLTOmUEoGt_JAwDhonw"
