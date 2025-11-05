@@ -1,3 +1,4 @@
+#tenabot/bot/views.py
 import logging
 import os
 from datetime import date
@@ -101,8 +102,13 @@ class ResumeUploadView(APIView):
 
             # Update Usage Tracker
             today = date.today()
-            usage = db.query(UsageTracker).filter(UsageTracker.user_id == user_id).one_or_none()
-            if usage and usage.date == today:
+            
+            # FIX: Query by BOTH user_id AND today's date
+            usage = db.query(UsageTracker).filter(
+                UsageTracker.user_id == user_id, 
+                UsageTracker.date == today # <-- ADDED DATE FILTER
+            ).one_or_none()
+            if usage and usage.date:
                 usage.count += 1
                 logger.debug(f"🔁 Updated usage count for today: {usage.count}")
             else:
