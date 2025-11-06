@@ -11,7 +11,8 @@ import urllib.parse
 from rest_framework import status
 from django.middleware.csrf import get_token
 import json
-
+from django.views.decorators.csrf import csrf_exempt
+@csrf_exempt
 @api_view(["POST"])
 @permission_classes([AllowAny])
 @ensure_csrf_cookie   # <-- ensures csrftoken cookie is set on response
