@@ -14,14 +14,20 @@ from rest_framework.response import Response
 from .utils import check_telegram_data_integrity
 from users.models import User
 from users.serializers import UserSerializer
-
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 logger = logging.getLogger(__name__)
+
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    def enforce_csrf(self, request):
+        return 
 
 from django.utils.decorators import method_decorator
 from rest_framework.views import APIView
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterTelegramUser(APIView):
     permission_classes = [AllowAny]
+    authentication_classes = [CsrfExemptSessionAuthentication, BasicAuthentication]
     def post(self,request):
         """
         Debug-friendly version: logs request headers/body and each parsing/validation step.
