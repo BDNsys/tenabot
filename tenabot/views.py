@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 @method_decorator(csrf_exempt, name='dispatch')
 class RegisterTelegramUser(APIView):
     permission_classes = [AllowAny]
-    def post(request):
+    def post(self,request):
         """
         Debug-friendly version: logs request headers/body and each parsing/validation step.
         Once debugging is done, remove csrf_exempt and implement appropriate CSRF/auth handling.
