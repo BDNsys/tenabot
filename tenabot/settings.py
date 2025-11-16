@@ -60,6 +60,18 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["tena.bdnsys.com",'127.0.0.1']
 
+CSRF_TRUSTED_ORIGINS = ["https://tena.bdnsys.com"]   # include your WebApp origin
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+# If you use SameSite=None for cross-site cookies:
+CSRF_COOKIE_SAMESITE = None
+SESSION_COOKIE_SAMESITE = None
+
+# If you use django-cors-headers:
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["https://tena.bdnsys.com"]
+
 
 # Application definition
 

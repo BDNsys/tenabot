@@ -1,16 +1,16 @@
+<!-- tenabot/bot/templates/bot/bot.html -->
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>TenaBot — Your Resume Assistant</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
   <style>
-    /* Define fallback CSS variables for Telegram Theme */
+    /* ... keep your existing styling ... */
     :root {
       --tg-theme-bg-color: #1c1c1c;
       --tg-theme-text-color: #fff;
@@ -21,87 +21,17 @@
       --tg-theme-link-color: #5E62F4;
       --tg-theme-destructive-text-color: #ff3b30;
     }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
-      transition: background-color 0.3s, color 0.3s;
-    }
-
-    .btn {
-      background-color: var(--tg-theme-button-color);
-      color: var(--tg-theme-button-text-color);
-      border: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: 600;
-      transition: all 0.2s;
-      width: 100%;
-    }
-
-    .btn:hover:not(:disabled) {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    .btn:disabled {
-      background-color: var(--tg-theme-hint-color);
-      cursor: not-allowed;
-    }
-
-    .card {
-      background-color: var(--tg-theme-secondary-bg-color);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid var(--tg-theme-secondary-bg-color);
-      background-color: var(--tg-theme-bg-color);
-      color: var(--tg-theme-text-color);
-      margin-bottom: 1rem;
-    }
-
-    textarea.input-field {
-      resize: vertical;
-      min-height: 100px;
-    }
-
-    .error-message {
-      color: var(--tg-theme-destructive-text-color);
-      font-size: 0.875rem;
-      margin-top: -0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .hidden-view {
-      display: none;
-    }
-
-    /* Progress Bar Styles */
-    .progress-bar {
-      height: 12px;
-      border-radius: 6px;
-      background-color: var(--tg-theme-bg-color);
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background-color: var(--tg-theme-button-color);
-      transition: width 0.5s ease-in-out;
-    }
+    body { font-family: 'Inter', sans-serif; background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); }
+    .btn { background-color: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; width: 100%; }
+    .hidden-view { display: none; }
+    .card { background-color: var(--tg-theme-secondary-bg-color); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .input-field { width:100%; padding:10px; border-radius:6px; border:1px solid var(--tg-theme-secondary-bg-color); background-color: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); margin-bottom:1rem;}
+    .error-message { color: var(--tg-theme-destructive-text-color); font-size:0.875rem; margin-top:-0.5rem; margin-bottom:1rem; }
+    .progress-bar { height: 12px; border-radius: 6px; background-color: var(--tg-theme-bg-color); overflow: hidden; }
+    .progress-fill { height:100%; width:0%; background-color: var(--tg-theme-button-color); transition: width 0.5s ease-in-out; }
   </style>
 </head>
-
 <body class="h-screen flex items-center justify-center">
-
   <div class="max-w-md w-full p-6">
 
     <div id="welcome-view" class="card">
@@ -109,14 +39,8 @@
       <p class="text-gray-400 text-sm mb-6">Your AI-powered resume companion inside Telegram.</p>
 
       <div class="mb-4">
-        <p class="text-gray-300">
-          <span class="font-semibold">User:</span>
-          <span id="user-name">Loading...</span>
-        </p>
-        <p class="text-gray-300">
-          <span class="font-semibold">Telegram ID:</span>
-          <span id="user-id">...</span>
-        </p>
+        <p class="text-gray-300"><span class="font-semibold">User:</span> <span id="user-name">Loading...</span></p>
+        <p class="text-gray-300"><span class="font-semibold">Telegram ID:</span> <span id="user-id">...</span></p>
       </div>
 
       <button id="goToUploadBtn" class="btn">📄 Upload Resume</button>
@@ -128,12 +52,10 @@
 
       <form id="uploadForm">
         <label for="job_title" class="block text-sm font-medium mb-1">Target Job Title <span class="text-red-500">*</span></label>
-        <input type="text" id="job_title" name="job_title" class="input-field"
-          placeholder="e.g., Senior Software Engineer" required>
+        <input type="text" id="job_title" name="job_title" class="input_field input-field" placeholder="e.g., Senior Software Engineer" required>
 
         <label for="job_description" class="block text-sm font-medium mb-1 mt-4">Job Description (Optional)</label>
-        <textarea id="job_description" name="job_description" class="input-field"
-          placeholder="Paste the job description here for better tailoring."></textarea>
+        <textarea id="job_description" name="job_description" class="input-field" placeholder="Paste the job description here for better tailoring."></textarea>
 
         <label for="pdf_file" class="block text-sm font-medium mb-1 mt-4">Select PDF Resume <span class="text-red-500">*</span></label>
         <input type="file" id="pdf_file" name="pdf_file" accept=".pdf" class="input-field pt-2" required>
@@ -148,14 +70,12 @@
     <div id="loading-view" class="card hidden-view text-center">
       <div class="text-5xl mb-4 animate-pulse">🤖</div>
       <h2 class="text-xl font-bold mb-2">Analyzing Your Resume...</h2>
-      <p id="loading-message" class="text-gray-400 text-sm mb-6 h-10 flex items-center justify-center">
-        Starting analysis...
-      </p>
+      <p id="loading-message" class="text-gray-400 text-sm mb-6 h-10 flex items-center justify-center">Starting analysis...</p>
 
       <div class="progress-bar mb-6">
         <div id="progress-fill" class="progress-fill"></div>
       </div>
-      
+
       <p class="text-sm text-gray-500">Please keep the Web App open.</p>
     </div>
 
@@ -175,7 +95,6 @@
     const API_REGISTER_URL = "https://tena.bdnsys.com/api/register_telegram_user/";
     const API_UPLOAD_URL = "https://tena.bdnsys.com/bot/upload-resume/";
 
-    // Random messages for the loading screen
     const LOADING_MESSAGES = [
       "Securing connection and initializing AI parsing engines...",
       "Extracting core skills and work history from your document...",
@@ -189,73 +108,64 @@
     // === TELEGRAM WEB APP INIT ===
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand();
-    // Use theme colors for WebApp header/background
+    try { tg.expand(); } catch(e) {}
     tg.setHeaderColor("secondary_bg_color");
     tg.setBackgroundColor("bg_color");
 
     // === STATE ===
     let csrfToken = null;
-    let loadingInterval = null; // Used to store the interval ID for the loading messages
-    let progressInterval = null; // Used to store the interval ID for the progress bar
+    let loadingInterval = null;
+    let progressInterval = null;
 
-    // === VIEW MANAGEMENT ===
+    // === VIEWS ===
     const views = {
       'welcome': document.getElementById('welcome-view'),
       'upload': document.getElementById('upload-view'),
-      'loading': document.getElementById('loading-view'), // New View
+      'loading': document.getElementById('loading-view'),
       'success': document.getElementById('success-view'),
     };
 
     function switchView(targetViewId, details = null) {
-      // Clear any running loading intervals when switching views
       clearInterval(loadingInterval);
       clearInterval(progressInterval);
-      
+
       Object.keys(views).forEach(id => {
-        if (id === targetViewId) {
-          views[id].classList.remove('hidden-view');
-        } else {
-          views[id].classList.add('hidden-view');
-        }
+        if (id === targetViewId) views[id].classList.remove('hidden-view');
+        else views[id].classList.add('hidden-view');
       });
 
       if (targetViewId === 'success' && details) {
         document.getElementById('success-details').innerHTML = `
-        <p><strong>Resume ID:</strong> ${details.resume_id}</p>
-        <p><strong>Job Title:</strong> ${details.job_title}</p>
-        <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
-      `;
+          <p><strong>Resume ID:</strong> ${details.resume_id}</p>
+          <p><strong>Job Title:</strong> ${details.job_title}</p>
+          <p><strong>Uploads Today:</strong> ${details.uploads_today}</p>
+        `;
       } else if (targetViewId === 'loading') {
         startLoadingEffect();
       }
     }
 
-    // === LOADING EFFECT LOGIC ===
     function startLoadingEffect() {
       const loadingMessageElement = document.getElementById('loading-message');
       const progressBarFill = document.getElementById('progress-fill');
       let messageIndex = 0;
-      let currentProgress = 5; // Start slightly above zero
+      let currentProgress = 5;
 
-      // Set up the interval for cycling messages
       loadingInterval = setInterval(() => {
         messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
         loadingMessageElement.textContent = LOADING_MESSAGES[messageIndex];
-      }, 3000); // Change message every 3 seconds
+      }, 3000);
 
-      // Set up the interval for progress bar simulation (slowly reaches 90%)
       progressInterval = setInterval(() => {
         if (currentProgress < 90) {
-          currentProgress += 5; // Increment by 5 every 0.5s
+          currentProgress += 5;
           progressBarFill.style.width = `${currentProgress}%`;
         } else {
-          clearInterval(progressInterval); // Stop incremental progress
+          clearInterval(progressInterval);
         }
       }, 500);
     }
-    
-    // Function to ensure the progress bar reaches 100% on successful completion
+
     function finishLoadingEffect() {
       clearInterval(loadingInterval);
       clearInterval(progressInterval);
@@ -263,8 +173,7 @@
       document.getElementById('loading-message').textContent = 'Finalizing and notifying bot...';
     }
 
-
-    // === USER REGISTRATION LOGIC (Unchanged) ===
+    // === REGISTER USER ===
     async function registerUser(userData) {
       const initData = tg?.initData;
       if (!initData) {
@@ -275,7 +184,11 @@
       try {
         const response = await fetch(API_REGISTER_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+          },
+          credentials: "include",   // <-- MUST include credentials so session cookie is set!
           body: JSON.stringify({
             initData: initData,
             telegram_id: userData.id,
@@ -286,15 +199,19 @@
           }),
         });
 
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
+
         if (response.ok && data.success && data.user) {
           updateUI(data.user);
-          // ✅ Save CSRF token globally and in sessionStorage
-          csrfToken = data.csrf_token;
-          sessionStorage.setItem("csrfToken", csrfToken);
+
+          // Save CSRF token (from JSON) AND store fallback in cookie/sessionStorage
+          csrfToken = data.csrf_token || sessionStorage.getItem("csrfToken") || null;
+          if (csrfToken) sessionStorage.setItem("csrfToken", csrfToken);
+          else console.warn("[TenaBot] registerUser: server did not return csrf_token in JSON.");
+
         } else {
           console.warn("[TenaBot] Registration failed:", data);
-          tg.showAlert("Authentication failed. Please restart the bot.");
+          tg.showAlert("Authentication failed. Please restart the bot and try again.");
         }
       } catch (err) {
         console.error("[TenaBot] Registration error:", err);
@@ -302,28 +219,24 @@
       }
     }
 
-    // === UI UPDATE (Unchanged) ===
     function updateUI(user) {
-      document.getElementById("user-name").textContent =
-        `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
+      document.getElementById("user-name").textContent = `${user.first_name || ""} ${user.last_name || ""} (@${user.username || "N/A"})`;
       document.getElementById("user-id").textContent = user.telegram_id || user.id || "N/A";
     }
 
-    // === FILE UPLOAD LOGIC (Updated) ===
+    // === FILE UPLOAD ===
     async function handleFileUpload(event) {
       event.preventDefault();
 
-      const form = event.target;
       const submitBtn = document.getElementById("submitUploadBtn");
       const errorDisplay = document.getElementById("upload-error");
-
       errorDisplay.classList.add('hidden-view');
       submitBtn.disabled = true;
       submitBtn.textContent = 'Preparing...';
 
       const fileInput = document.getElementById('pdf_file');
       const jobTitleInput = document.getElementById('job_title');
-      const jobDescriptionInput = document.getElementById('job_description'); // New Input
+      const jobDescriptionInput = document.getElementById('job_description');
 
       if (!fileInput.files[0]) {
         showError("Please select a PDF file.");
@@ -331,20 +244,21 @@
         return;
       }
 
-      // --- Switch to Loading View ---
-      switchView('loading'); 
-      tg.MainButton.show().setText('AI is Working Hard...');
+      // Switch to loading UI
+      switchView('loading');
+      try { tg.MainButton.show().setText('AI is Working Hard...'); } catch(e){}
 
       const formData = new FormData();
       formData.append('pdf_file', fileInput.files[0]);
       formData.append('job_title', jobTitleInput.value);
-      formData.append('job_description', jobDescriptionInput.value); // Append new field
+      formData.append('job_description', jobDescriptionInput.value || '');
 
-      // Retrieve token
+      // Retrieve token - check both variable and sessionStorage
       const token = csrfToken || sessionStorage.getItem("csrfToken");
       if (!token) {
         showError("CSRF token missing. Please restart the bot.");
-        switchView('upload'); // Go back to upload view on failure
+        switchView('upload');
+        resetUploadButton();
         return;
       }
 
@@ -352,61 +266,59 @@
         const response = await fetch(API_UPLOAD_URL, {
           method: 'POST',
           headers: {
-            'X-CSRFToken': token, 
+            'X-CSRFToken': token,
+            // note: do not set Content-Type for multipart/form-data — browser will set it with boundary
           },
           body: formData,
-          credentials: 'include', 
+          credentials: 'include', // send session cookie
         });
 
-        const data = await response.json();
-        finishLoadingEffect(); // Progress bar reaches 100%
+        const data = await response.json().catch(() => ({}));
+        finishLoadingEffect();
 
         if (response.ok) {
-          // Wait a moment for the 100% progress bar to be visible
           setTimeout(() => {
             switchView('success', {
               resume_id: data.resume_id,
               job_title: jobTitleInput.value,
               uploads_today: data.uploads_today
             });
-            tg.MainButton.hide();
+            try { tg.MainButton.hide(); } catch(e){}
             tg.showPopup({ message: "Resume successfully uploaded and processing started!" });
-          }, 500); 
-
+          }, 500);
         } else {
           let errorMessage = "An unknown error occurred.";
           if (data.detail) errorMessage = data.detail;
           else if (data.pdf_file) errorMessage = data.pdf_file[0];
           else if (data.non_field_errors) errorMessage = data.non_field_errors[0];
           showError(errorMessage);
-          switchView('upload'); // Go back to upload view on failure
+          switchView('upload');
           resetUploadButton();
         }
       } catch (error) {
         console.error("[TenaBot] Upload error:", error);
-        finishLoadingEffect(); // Stop loading effects
+        finishLoadingEffect();
         showError("Network connection failed. Please try again.");
-        switchView('upload'); // Go back to upload view on failure
+        switchView('upload');
         resetUploadButton();
       }
     }
 
-    // === UTILITY FUNCTIONS (Unchanged) ===
     function showError(message) {
       const errorDisplay = document.getElementById("upload-error");
       errorDisplay.textContent = message;
       errorDisplay.classList.remove('hidden-view');
-      tg.showAlert(message);
+      try { tg.showAlert(message); } catch(e){}
     }
 
     function resetUploadButton() {
       const submitBtn = document.getElementById("submitUploadBtn");
       submitBtn.disabled = false;
       submitBtn.textContent = '⬆️ Start Analysis';
-      tg.MainButton.hide();
+      try { tg.MainButton.hide(); } catch(e){}
     }
 
-    // === EVENT LISTENERS ===
+    // === EVENTS ===
     document.addEventListener("DOMContentLoaded", () => {
       const userData = tg?.initDataUnsafe?.user;
       if (userData) {
@@ -416,24 +328,17 @@
           username: userData.username,
           telegram_id: userData.id,
         });
+        // Immediately register user (set session cookie + get csrf token)
         registerUser(userData);
       } else {
         updateUI({ first_name: "Guest", last_name: "", username: "unknown", telegram_id: "N/A" });
       }
 
       document.getElementById("goToUploadBtn").addEventListener("click", () => switchView('upload'));
-      
-      document.getElementById("cancelUploadBtn").addEventListener("click", () => {
-        switchView('welcome');
-        resetUploadButton();
-      });
-      
+      document.getElementById("cancelUploadBtn").addEventListener("click", () => { switchView('welcome'); resetUploadButton(); });
       document.getElementById("uploadForm").addEventListener("submit", handleFileUpload);
-      
       document.getElementById("closeWebAppBtn").addEventListener("click", () => tg.close());
     });
   </script>
-
 </body>
-
 </html>

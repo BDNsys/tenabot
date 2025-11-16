@@ -24,7 +24,7 @@ from django.conf.urls.static import static,serve
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('bot/', include('bot.urls')),
-    path('api/register_telegram_user/', views.register_telegram_user, name="register_telegram_user"),
+    path('api/register_telegram_user/', views.RegisterTelegramUser.as_view(), name="register_telegram_user"),
     # path('api/get_user/<str:telegram_id>/', views.get_user, name='get_user'),
     # path('api/get_users/', views.get_users, name='get_users'),
 ]

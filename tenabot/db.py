@@ -1,7 +1,11 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from pathlib import Path
+from pathlib import Path#
+from dotenv import load_dotenv
+
+# Ensure the .env file is loaded at the start of the module execution
+load_dotenv()
 # from tenabot.config import settings  # your custom settings handler
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_USER = os.getenv("DB_USER")

@@ -1,7 +1,7 @@
 #tenabot/bot/models.py
 from datetime import datetime, date, timezone
 from sqlalchemy import (
-    Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float
+    Column, String, Integer, DateTime, ForeignKey, Boolean, Text, JSON, Date, Enum, Float,UniqueConstraint
 )
 from sqlalchemy.orm import relationship, declarative_base
 
@@ -78,24 +78,11 @@ class ResumeInfo(Base):
 # --- 4. UsageTracker Model ---
 class UsageTracker(Base):
     __tablename__ = "usage_tracker"
-
     id = Column(Integer, primary_key=True, autoincrement=True)
-    
-    # 1. REMOVED unique=True here. It is now only a ForeignKey.
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) 
-    
-    date = Column(Date, default=date.today, nullable=False)
-    count = Column(Integer, default=0, nullable=False)
-
+    user_id = Column(Integer, ForeignKey("users.id"))
+    date = Column(Date, default=date.today)
+    count = Column(Integer, default=0)
     # Relationships
-    # Note: Use 'usage_tracker' as the back_populates name for clarity/consistency
-    user = relationship("User", back_populates="usage_trackers") 
-
-    # 2. ADDED Composite Unique Constraint:
-    # This ensures that a single user can only have ONE entry for a specific date.
-    __table_args__ = (
-        UniqueConstraint('user_id', 'date', name='uq_user_date_unique'),
-    )
-
+    user = relationship("User", back_populates="usage") # Links to the User model above
     def __repr__(self):
-        return f"<UsageTracker user_id={self.user_id} date={self.date} count={self.count}>"
+        return f"<UsageTracker user={self.user_id} count={self.count}>" 

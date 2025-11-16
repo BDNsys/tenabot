@@ -39,15 +39,14 @@ def home(request):
 
 This view handles the resume file upload, saves it to disk, creates database records (Resume, ResumeInfo, UsageTracker), and **asynchronously** launches the AI processing service. 
 """
-@method_decorator(csrf_exempt, name='dispatch')
 class ResumeUploadView(APIView):
+    # DO NOT csrf_exempt — require real session + CSRF
     authentication_classes = [SessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
         logger.info("📥 [UPLOAD INIT] Incoming resume upload request.")
-        
-        # 1. Validation and Authentication
+
         serializer = ResumeUploadSerializer(data=request.data)
         if not serializer.is_valid():
             logger.warning(f"⚠️ Validation failed: {serializer.errors}")
@@ -55,16 +54,16 @@ class ResumeUploadView(APIView):
 
         pdf_file = serializer.validated_data['pdf_file']
         job_title = serializer.validated_data['job_title']
+        job_description = serializer.validated_data.get('job_description', '')
         django_user = request.user
 
         logger.info(f"👤 Authenticated user: {django_user.username} (telegram_id={django_user.telegram_id})")
 
-        # 2. File Saving Logic
         pdf_dir = os.path.join(settings.MEDIA_ROOT, 'pdfs')
         os.makedirs(pdf_dir, exist_ok=True)
         filename = f"{django_user.telegram_id}_{pdf_file.name}"
         file_path = os.path.join(pdf_dir, filename)
-        db_file_path = os.path.join('pdfs', filename) # Relative path for DB
+        db_file_path = os.path.join('pdfs', filename)
 
         try:
             with open(file_path, 'wb+') as destination:
@@ -75,78 +74,60 @@ class ResumeUploadView(APIView):
             logger.error(f"❌ File saving failed: {e}", exc_info=True)
             return Response({"detail": f"File saving failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # 3. Database Transaction (SQLAlchemy)
         db_gen = get_db()
         db = next(db_gen)
         new_resume_id = None
 
         try:
-            # Map Django user to SQLAlchemy user
             sqla_user = db.query(SQLAlchemyUser).filter(SQLAlchemyUser.telegram_id == django_user.telegram_id).one_or_none()
             if not sqla_user:
                 logger.error("❌ SQLAlchemy user not found for this telegram_id.")
                 return Response({"detail": "Corresponding SQLAlchemy User not found."}, status=status.HTTP_404_NOT_FOUND)
             user_id = sqla_user.id
 
-            # Create Resume Record
             new_resume = Resume(user_id=user_id, file_path=db_file_path, job_title=job_title)
             db.add(new_resume)
-            db.flush() # Get ID before commit
+            db.flush()
             new_resume_id = new_resume.id
             logger.info(f"🧾 Created Resume ID={new_resume_id}")
 
-            # Create ResumeInfo Placeholder
             new_resume_info = ResumeInfo(resume_id=new_resume.id)
             db.add(new_resume_info)
-            logger.debug("📄 Placeholder ResumeInfo created.")
 
-            # Update Usage Tracker
             today = date.today()
-            
-            # FIX: Query by BOTH user_id AND today's date
             usage = db.query(UsageTracker).filter(
-                UsageTracker.user_id == user_id, 
-                UsageTracker.date == today # <-- ADDED DATE FILTER
+                UsageTracker.user_id == user_id,
+                UsageTracker.date == today
             ).one_or_none()
             if usage and usage.date:
                 usage.count += 1
-                logger.debug(f"🔁 Updated usage count for today: {usage.count}")
             else:
                 usage = UsageTracker(user_id=user_id, date=today, count=1)
                 db.add(usage)
-                logger.debug("🆕 Created new usage tracker entry.")
 
             db.commit()
             logger.info(f"💾 [COMMIT] Database committed successfully for resume_id={new_resume_id}")
 
-            # 4. Asynchronous Processing
-            # threading.Thread(
-            #     target=services.process_and_save_resume_info, 
-            #     args=(new_resume_id, db_file_path)
-            # ).start()
-            services.process_and_save_resume_info(new_resume_id,db_file_path,serializer.validated_data.get('job_description', ''))
-            logger.info(f"🚀 [THREAD START] Background resume analysis launched for resume_id={new_resume_id}")
+            # Launch processing (currently synchronous call in your code — keep or change to background)
+            services.process_and_save_resume_info(new_resume_id, db_file_path, job_description)
+            logger.info(f"🚀 [PROCESS START] Processing launched for resume_id={new_resume_id}")
 
             return Response({
-                "message": "Resume uploaded successfully. Processing started in background.",
+                "message": "Resume uploaded successfully. Processing started.",
                 "resume_id": new_resume.id,
                 "file_path": db_file_path,
                 "uploads_today": usage.count
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            db.rollback() # Rollback on any transaction error
+            db.rollback()
             logger.error(f"💥 [ROLLBACK] Transaction failed: {e}", exc_info=True)
             if os.path.exists(file_path):
                 os.remove(file_path)
-                logger.warning(f"🧹 Cleaned up file: {file_path}")
             return Response({"detail": f"Database transaction failed: {e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             db_gen.close()
             logger.info("🔚 [UPLOAD END] Database session closed.")
-
-
-
 """ 📑 Resume List Views
 
 These views provide paginated read access to the database records.
