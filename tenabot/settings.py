@@ -201,42 +201,42 @@ GEMINI_API_TOKEN=os.getenv("GEMINI_API_TOKEN")
 
 #logging
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
+# LOGGING = {
+#     "version": 1,
+#     "disable_existing_loggers": False,
+#     "formatters": {
+#         "verbose": {
+#             "format": "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+#         },
+#     },
+#     "handlers": {
+#         "console": {
+#             "class": "logging.StreamHandler",
+#             "formatter": "verbose",
           
             
-        },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": "/home/bdnsysif/bdnsys.com/nazri_bdn/tena/logs/tena.log",
-            "formatter": "verbose",
+#         },
+#         # "file": {
+#         #     "class": "logging.FileHandler",
+#         #     "filename": "/home/bdnsysif/bdnsys.com/nazri_bdn/tena/logs/tena.log",
+#         #     "formatter": "verbose",
     
-        },
-    },
-    "root": {
-        "handlers": ["console", "file"],
-        "level": "INFO",
-    },
-    "loggers": {
-        "tenabot": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-        "bot": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
-            "propagate": True,
-        },
-    },
-}
+#         # },
+#     },
+#     "root": {
+#         "handlers": ["console", "file"],
+#         "level": "INFO",
+#     },
+#     "loggers": {
+#         "tenabot": {
+#             "handlers": ["console", "file"],
+#             "level": "DEBUG",
+#             "propagate": True,
+#         },
+#         "bot": {
+#             "handlers": ["console", "file"],
+#             "level": "DEBUG",
+#             "propagate": True,
+#         },
+#     },
+# }
