@@ -10,6 +10,8 @@ import sys
 
 from django.contrib.auth import get_user_model
 
+from bot.services import get_active_promotion,get_usage_count
+
 
 User = get_user_model()
 
@@ -55,7 +57,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
-   
+    
+    usage_count = get_usage_count(user)
+    limit = os.getenv("MAX_UPLOADS_PER_DAY", 1)
+    if usage_count >= limit:
+        promotion = get_active_promotion()
+        if promotion.channel!="":
+            message = f"Welcome back, {telegram_user.first_name or telegram_user.username}! You have reached your daily upload limit. Please follow the following channels and continue to use tena bot {promotion.channel.channel_name}"
+        else:
+            message = f"Welcome back, {telegram_user.first_name or telegram_user.username}! we dont have any active promotion"
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(message, reply_markup=reply_markup)
 

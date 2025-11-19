@@ -22,7 +22,7 @@ from .serializers import ResumeUploadSerializer, ResumeListSerializer, ResumeInf
 from tenabot.db import get_db
 from .models import Resume, ResumeInfo, UsageTracker, User as SQLAlchemyUser
 from analytics.services import process_and_save_resume_info
-
+from .services import get_active_promotion, get_promotion_by_id,get_usage_count
 # Initialize logger
 # Assuming 'name' is defined or replaced with '__name__'
 logger = logging.getLogger(__name__) 
@@ -45,6 +45,11 @@ class ResumeUploadView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
+
+        usage_count = get_usage_count(request.user)
+        limit = os.getenv("MAX_UPLOADS_PER_DAY", 1)
+        if usage_count >= limit:
+            return Response({"detail": "Daily upload limit reached."}, status=status.HTTP_403_FORBIDDEN)
         logger.info("📥 [UPLOAD INIT] Incoming resume upload request.")
 
         serializer = ResumeUploadSerializer(data=request.data)

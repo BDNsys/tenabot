@@ -1,3 +1,4 @@
+#tenabot/users/models.py
 from django.db import models
 
 # Create your models here.
@@ -44,3 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.username or self.telegram_id}"
+    
+    
+
+
