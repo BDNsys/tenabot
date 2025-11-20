@@ -63,7 +63,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(message, reply_markup=reply_markup)
 
 
-
+    bot_user = await get_bot_user(user)
     usage_count = get_usage_count(bot_user)
     limit = os.getenv("MAX_UPLOADS_PER_DAY", 1)
     if usage_count >= limit:
