@@ -59,7 +59,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("🚀 Launch TenaBot", web_app=web_app)]
     ]
     
-    usage_count = get_usage_count(user)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(message, reply_markup=reply_markup)
+
+
+
+    usage_count = get_usage_count(bot_user)
     limit = os.getenv("MAX_UPLOADS_PER_DAY", 1)
     if usage_count >= limit:
         promotion = get_active_promotion()
@@ -69,7 +74,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             message = f"Welcome back, {telegram_user.first_name or telegram_user.username}! we dont have any active promotion"
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(message, reply_markup=reply_markup)
-
+    
+@sync_to_async
+def get_bot_user(user):
+    # Assuming a BotUser model exists and is linked to the User model
+    from bot.models import User as BotUser  # Import your BotUser model
+    bot_user, created = BotUser.objects.get_or_create(user=user)
+    return bot_user
   
 
 def main():
