@@ -22,7 +22,8 @@ from .serializers import ResumeUploadSerializer, ResumeListSerializer, ResumeInf
 from tenabot.db import get_db
 from .models import Resume, ResumeInfo, UsageTracker, User as SQLAlchemyUser
 from analytics.services import process_and_save_resume_info
-from .services import get_active_promotion, get_promotion_by_id,get_usage_count
+from .services.promo_read import get_active_promotion
+from .services.usage_services import increase_usage,get_usage_count
 # Initialize logger
 # Assuming 'name' is defined or replaced with '__name__'
 logger = logging.getLogger(__name__) 
