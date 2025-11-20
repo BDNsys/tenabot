@@ -10,7 +10,8 @@ import sys
 
 from django.contrib.auth import get_user_model
 
-from bot.services import get_active_promotion,get_usage_count
+from bot.services.promo_read import get_active_promotion
+from bot.services.usage_services import get_usage_count
 
 
 User = get_user_model()
